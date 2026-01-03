@@ -4,6 +4,7 @@ import { Buffer } from 'buffer'
 import 'react-native-get-random-values'
 import { getConnection, getProgramId } from './connection'
 import { IDL } from './idl'
+import { getLocalWallet } from './localWallet'
 import { getWalletInfo } from './wallet'
 import { signAllTransactions, signTransaction } from './walletConnection'
 
@@ -49,6 +50,34 @@ export const getWalletProvider = async (): Promise<Wallet> => {
   }
   
   const publicKey = new PublicKey(walletInfo.publicKey)
+  
+  if (walletInfo.type === 'local_keypair') {
+    const keypair = await getLocalWallet()
+    if (!keypair) {
+      throw new Error('Local wallet not found')
+    }
+    
+    return {
+      publicKey,
+      signTransaction: async <T extends Transaction | VersionedTransaction>(tx: T): Promise<T> => {
+        if (tx instanceof Transaction) {
+          tx.sign(keypair)
+          return tx as T
+        } else {
+          throw new Error('Versioned transactions not supported with local wallet')
+        }
+      },
+      signAllTransactions: async <T extends Transaction | VersionedTransaction>(txs: T[]): Promise<T[]> => {
+        return txs.map(tx => {
+          if (tx instanceof Transaction) {
+            tx.sign(keypair)
+            return tx as T
+          }
+          throw new Error('Versioned transactions not supported with local wallet')
+        })
+      },
+    } as Wallet
+  }
   
   return {
     publicKey,

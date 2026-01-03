@@ -1,11 +1,12 @@
 import { PublicKey } from '@solana/web3.js'
 import * as SecureStore from 'expo-secure-store'
+import { getLocalWalletPublicKey, hasLocalWallet } from './localWallet'
 
 const WALLET_TYPE_KEY = 'aliveping_wallet_type'
 const WALLET_PUBLIC_KEY_KEY = 'aliveping_wallet_public_key'
 const WALLET_AUTH_TOKEN_KEY = 'aliveping_wallet_auth_token'
 
-export type WalletType = 'mobile_wallet_adapter'
+export type WalletType = 'mobile_wallet_adapter' | 'local_keypair'
 
 export interface WalletInfo {
   publicKey: string
@@ -41,12 +42,30 @@ export const getWalletPublicKey = async (): Promise<string | null> => {
 export const getWalletInfo = async (): Promise<WalletInfo | null> => {
   try {
     const walletType = (await SecureStore.getItemAsync(WALLET_TYPE_KEY)) as WalletType | null
-    const publicKey = await getWalletPublicKey()
-    const authToken = await SecureStore.getItemAsync(WALLET_AUTH_TOKEN_KEY)
+    let publicKey = await getWalletPublicKey()
+    
+    if (!publicKey && walletType === 'local_keypair') {
+      publicKey = await getLocalWalletPublicKey()
+    }
     
     if (!walletType || !publicKey) {
+      const hasLocal = await hasLocalWallet()
+      if (hasLocal) {
+        const localPubKey = await getLocalWalletPublicKey()
+        if (localPubKey) {
+          return {
+            publicKey: localPubKey,
+            type: 'local_keypair',
+            isConnected: true,
+          }
+        }
+      }
       return null
     }
+    
+    const authToken = walletType === 'mobile_wallet_adapter' 
+      ? await SecureStore.getItemAsync(WALLET_AUTH_TOKEN_KEY)
+      : null
     
     return {
       publicKey,
@@ -71,6 +90,8 @@ export const setWallet = async (publicKey: string, type: WalletType, authToken?:
     
     if (authToken) {
       await SecureStore.setItemAsync(WALLET_AUTH_TOKEN_KEY, authToken)
+    } else if (type === 'local_keypair') {
+      await SecureStore.deleteItemAsync(WALLET_AUTH_TOKEN_KEY)
     }
   } catch (error: any) {
     console.error(`Error setting wallet:`, error)
@@ -80,6 +101,9 @@ export const setWallet = async (publicKey: string, type: WalletType, authToken?:
 
 export const clearWallet = async (): Promise<void> => {
   try {
+    const { clearLocalWallet } = await import('./localWallet')
+    await clearLocalWallet()
+    
     await Promise.all([
       SecureStore.deleteItemAsync(WALLET_TYPE_KEY),
       SecureStore.deleteItemAsync(WALLET_PUBLIC_KEY_KEY),
