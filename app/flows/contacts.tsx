@@ -1,8 +1,11 @@
+import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
+import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { useContacts } from '@/lib/hooks/useContacts'
 import * as Haptics from 'expo-haptics'
 import { Plus, Star, Trash2, UserPlus, Users } from 'lucide-react-native'
 import React, { useState } from 'react'
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 const ContactsScreen = () => {
@@ -94,20 +97,16 @@ const ContactsScreen = () => {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-brand-white" edges={['top', 'bottom']}>
+    <SafeAreaView className="flex-1 bg-brand-white" edges={['top']}>
       <View className="flex-1">
-        <View className="pt-8 pb-8 px-6">
-          <Text className="text-3xl font-bold text-brand-black mb-2">
-            Trusted Contacts
-          </Text>
-          <Text className="text-base text-brand-muted">
-            Manage your emergency contacts
-          </Text>
-        </View>
+        <ScreenHeader
+          title="Trusted Contacts"
+          subtitle="Manage your emergency contacts"
+        />
 
-        <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
+        <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
           {showAddForm ? (
-            <View className="mb-6 p-6 rounded-2xl bg-white shadow-sm">
+            <Card className="mb-6">
               <Text className="text-lg font-semibold text-brand-black mb-5">
                 Add New Contact
               </Text>
@@ -130,65 +129,60 @@ const ContactsScreen = () => {
               />
               
               <View className="flex-row gap-3">
-                <Pressable
-                  onPress={() => {
-                    setShowAddForm(false)
-                    setNewContactName('')
-                    setNewContactPhone('')
-                  }}
-                  className="flex-1 py-3.5 rounded-xl bg-brand-light active:opacity-80"
-                >
-                  <Text className="text-center text-brand-black font-semibold text-base">
+                <View className="flex-1">
+                  <Button
+                    onPress={() => {
+                      setShowAddForm(false)
+                      setNewContactName('')
+                      setNewContactPhone('')
+                    }}
+                    variant="secondary"
+                  >
                     Cancel
-                  </Text>
-                </Pressable>
+                  </Button>
+                </View>
                 
-                <Pressable
-                  onPress={handleAddContact}
-                  className="flex-1 py-3.5 rounded-xl bg-brand-black active:opacity-90"
-                >
-                  <Text className="text-center text-brand-white font-semibold text-base">
+                <View className="flex-1">
+                  <Button
+                    onPress={handleAddContact}
+                  >
                     Add
-                  </Text>
-                </Pressable>
+                  </Button>
+                </View>
               </View>
-            </View>
+            </Card>
           ) : (
             <View className="flex-row gap-3 mb-6">
-              <Pressable
-                onPress={handleImportContacts}
-                disabled={isImporting}
-                className="flex-1 py-4 rounded-2xl bg-brand-black active:opacity-90 disabled:opacity-50 flex-row items-center justify-center gap-2 shadow-lg"
-              >
-                {isImporting ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <>
-                    <UserPlus size={20} color="#FFFFFF" />
-                    <Text className="text-brand-white font-semibold text-base">
-                      Import
-                    </Text>
-                  </>
-                )}
-              </Pressable>
+              <View className="flex-1">
+                <Button
+                  onPress={handleImportContacts}
+                  disabled={isImporting}
+                  loading={isImporting}
+                  size="md"
+                >
+                  <UserPlus size={20} color="#FFFFFF" />
+                  Import
+                </Button>
+              </View>
               
-              <Pressable
-                onPress={() => {
-                  setShowAddForm(true)
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-                }}
-                className="flex-1 py-4 rounded-2xl bg-white border-2 border-brand-black active:opacity-80 flex-row items-center justify-center gap-2 shadow-sm"
-              >
-                <Plus size={20} color="#000000" />
-                <Text className="text-brand-black font-semibold text-base">
+              <View className="flex-1">
+                <Button
+                  onPress={() => {
+                    setShowAddForm(true)
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+                  }}
+                  variant="outline"
+                  size="md"
+                >
+                  <Plus size={20} color="#000000" />
                   Add
-                </Text>
-              </Pressable>
+                </Button>
+              </View>
             </View>
           )}
 
           {trustedContacts.length === 0 ? (
-            <View className="items-center justify-center py-16 rounded-2xl bg-white shadow-sm">
+            <Card className="items-center justify-center py-16">
               <Users size={64} color="#9CA3AF" strokeWidth={1.5} />
               <Text className="mt-6 text-lg font-semibold text-brand-muted">
                 No trusted contacts
@@ -196,24 +190,21 @@ const ContactsScreen = () => {
               <Text className="mt-3 text-sm text-brand-muted text-center px-8 leading-5">
                 Add contacts to receive alerts when you need help
               </Text>
-            </View>
+            </Card>
           ) : (
-            <View className="gap-4 pb-8">
+            <View className="gap-4">
               {trustedContacts.map((contact) => (
-                <View
-                  key={contact.id}
-                  className="p-5 rounded-2xl bg-white shadow-sm"
-                >
+                <Card key={contact.id}>
                   <View className="flex-row items-center justify-between">
                     <View className="flex-1 flex-row items-center gap-4">
-                      <View className="w-16 h-16 rounded-full bg-brand-accent items-center justify-center shadow-sm">
+                      <View className="w-16 h-16 rounded-full bg-brand-accent items-center justify-center">
                         <Text className="text-2xl font-bold text-brand-black">
                           {contact.name.charAt(0).toUpperCase()}
                         </Text>
                       </View>
                       
                       <View className="flex-1">
-                        <View className="flex-row items-center gap-2.5 mb-1.5">
+                        <View className="flex-row items-center gap-3 mb-1.5">
                           <Text className="text-lg font-semibold text-brand-black">
                             {contact.name}
                           </Text>
@@ -227,7 +218,7 @@ const ContactsScreen = () => {
                       </View>
                     </View>
                     
-                    <View className="flex-row gap-2.5">
+                    <View className="flex-row gap-3">
                       {!contact.isPrimary && (
                         <Pressable
                           onPress={() => {
@@ -248,7 +239,7 @@ const ContactsScreen = () => {
                       </Pressable>
                     </View>
                   </View>
-                </View>
+                </Card>
               ))}
             </View>
           )}

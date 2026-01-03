@@ -1,5 +1,6 @@
 import { SettingsItem } from '@/components/settings/SettingsItem'
 import { SettingsSection } from '@/components/settings/SettingsSection'
+import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { useAppStore } from '@/lib/store'
 import { clearWallet } from '@/lib/solana/wallet'
 import configs from '@/config'
@@ -20,20 +21,16 @@ const SettingsScreen = () => {
   const resetStore = useAppStore((s) => s.resetStore)
 
   return (
-    <SafeAreaView className="flex-1 bg-brand-white" edges={['top', 'bottom']}>
+    <SafeAreaView className="flex-1 bg-brand-white" edges={['top']}>
       <View className="flex-1">
-        <View className="pt-8 pb-8 px-6">
-          <Text className="text-3xl font-bold text-brand-black mb-2">
-            Settings
-          </Text>
-          <Text className="text-base text-brand-muted">
-            Manage your preferences
-          </Text>
-        </View>
+        <ScreenHeader
+          title="Settings"
+          subtitle="Manage your preferences"
+        />
 
-        <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
+        <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
           <SettingsSection title="Contacts">
-            <View className="rounded-2xl bg-white overflow-hidden shadow-sm">
+            <View className="rounded-2xl bg-white overflow-hidden">
               <SettingsItem
                 icon={Users}
                 title="Trusted Contacts"
@@ -45,7 +42,7 @@ const SettingsScreen = () => {
           </SettingsSection>
 
           <SettingsSection title="Notifications">
-            <View className="rounded-2xl bg-white overflow-hidden shadow-sm">
+            <View className="rounded-2xl bg-white overflow-hidden">
               <SettingsItem
                 icon={Bell}
                 title="SMS Alerts"
@@ -67,8 +64,7 @@ const SettingsScreen = () => {
                 value={notificationPreferences.emailEnabled}
                 onToggle={(value) => updateNotificationPreferences({ emailEnabled: value })}
               />
-            </View>
-            <View className="mt-3 rounded-2xl bg-white overflow-hidden shadow-sm">
+              <View className="h-px bg-brand-light mx-5" />
               <SettingsItem
                 title="Sound"
                 subtitle="Play sound for alerts"
@@ -86,7 +82,7 @@ const SettingsScreen = () => {
           </SettingsSection>
 
           <SettingsSection title="Privacy & Data">
-            <View className="rounded-2xl bg-white overflow-hidden shadow-sm">
+            <View className="rounded-2xl bg-white overflow-hidden">
               <SettingsItem
                 icon={Shield}
                 title="Share Location"
@@ -120,7 +116,7 @@ const SettingsScreen = () => {
           </SettingsSection>
 
           <SettingsSection title="About">
-            <View className="rounded-2xl bg-white overflow-hidden shadow-sm">
+            <View className="rounded-2xl bg-white overflow-hidden">
               <SettingsItem
                 icon={Info}
                 title={`About ${configs.appName}`}
@@ -132,7 +128,7 @@ const SettingsScreen = () => {
           </SettingsSection>
 
           <SettingsSection title="Account">
-            <View className="rounded-2xl bg-white overflow-hidden shadow-sm">
+            <View className="rounded-2xl bg-white overflow-hidden">
               <SettingsItem
                 icon={LogOut}
                 title="Logout"
@@ -166,7 +162,6 @@ const SettingsScreen = () => {
             </View>
           </SettingsSection>
 
-          <View className="h-10" />
         </ScrollView>
       </View>
     </SafeAreaView>

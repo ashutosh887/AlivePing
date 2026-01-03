@@ -1,7 +1,9 @@
 import { AlertScreen } from '@/components/alert/AlertScreen'
+import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
+import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { useCheckIn } from '@/lib/hooks/useCheckIn'
 import { getSession } from '@/lib/solana/program'
-import { getWalletPublicKey } from '@/lib/solana/wallet'
 import { useAppStore } from '@/lib/store'
 import { formatDate, formatTime } from '@/lib/utils'
 import * as Haptics from 'expo-haptics'
@@ -26,28 +28,14 @@ const HomeScreen = () => {
   const trustedContacts = useAppStore((s) => s.trustedContacts)
   const scheduledCheckIns = useAppStore((s) => s.scheduledCheckIns)
   const triggerPanicStore = useAppStore((s) => s.triggerPanic)
-  const [walletAddress, setWalletAddress] = useState<string | null>(null)
   const [onChainStatus, setOnChainStatus] = useState<string | null>(null)
   const [isLoadingStatus, setIsLoadingStatus] = useState(false)
-
-  useEffect(() => {
-    loadWalletInfo()
-  }, [])
 
   useEffect(() => {
     if (checkIn?.isActive) {
       checkOnChainStatus()
     }
   }, [checkIn?.isActive])
-
-  const loadWalletInfo = async () => {
-    try {
-      const address = await getWalletPublicKey()
-      setWalletAddress(address)
-    } catch (error) {
-      console.error('Load wallet error:', error)
-    }
-  }
 
   const checkOnChainStatus = async () => {
     setIsLoadingStatus(true)
@@ -103,27 +91,14 @@ const HomeScreen = () => {
   const activeScheduled = scheduledCheckIns.filter(s => s.isActive)
 
   return (
-    <SafeAreaView className="flex-1 bg-brand-white" edges={['top', 'bottom']}>
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        <View className="px-6 pt-8 pb-6">
-          <View className="flex-row items-center justify-between mb-2">
-            <Text className="text-3xl font-bold text-brand-black">
-              Safety Hub
-            </Text>
-            {walletAddress && (
-              <Pressable
-                onPress={() => router.push('/flows/settings')}
-                className="px-3 py-1.5 rounded-full bg-brand-light active:opacity-80"
-              >
-                <Text className="text-xs font-semibold text-brand-black">
-                  {walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}
-                </Text>
-              </Pressable>
-            )}
-          </View>
-          <Text className="text-base text-brand-muted mb-6">
-            Your personal safety command center
-          </Text>
+    <SafeAreaView className="flex-1 bg-brand-white" edges={['top']}>
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+        <ScreenHeader
+          title="Safety Hub"
+          subtitle="Your personal safety command center"
+        />
+        
+        <View className="px-6 pb-6">
 
           {!checkIn?.isActive ? (
             <View className="gap-4 mb-6">
@@ -131,10 +106,10 @@ const HomeScreen = () => {
                 <Pressable
                   onPress={handleStartCheckIn}
                   disabled={isProcessing}
-                  className="flex-1 py-5 rounded-2xl bg-brand-black active:opacity-90 disabled:opacity-50 shadow-lg items-center justify-center"
+                  className="flex-1 py-4 rounded-2xl bg-brand-dark active:opacity-90 disabled:opacity-50 items-center justify-center"
                 >
-                  <Clock size={28} color="#FFFFFF" strokeWidth={2.5} />
-                  <Text className="text-center text-brand-white text-lg font-semibold mt-2">
+                  <Clock size={22} color="#FFFFFF" strokeWidth={2} />
+                  <Text className="text-center text-brand-white text-base font-semibold mt-1.5">
                     {isProcessing ? 'Starting...' : 'Start Check-In'}
                   </Text>
                 </Pressable>
@@ -142,19 +117,19 @@ const HomeScreen = () => {
                 <Pressable
                   onPress={handlePanic}
                   disabled={isProcessing}
-                  className="flex-1 py-5 rounded-2xl bg-red-600 active:opacity-90 disabled:opacity-50 shadow-lg items-center justify-center"
+                  className="flex-1 py-4 rounded-2xl bg-red-500 active:opacity-90 disabled:opacity-50 items-center justify-center"
                 >
-                  <AlertTriangle size={28} color="#FFFFFF" fill="#FFFFFF" strokeWidth={2.5} />
-                  <Text className="text-center text-brand-white text-lg font-semibold mt-2">
+                  <AlertTriangle size={22} color="#FFFFFF" fill="#FFFFFF" strokeWidth={2} />
+                  <Text className="text-center text-brand-white text-base font-semibold mt-1.5">
                     Panic
                   </Text>
                 </Pressable>
               </View>
 
               {activeScheduled.length > 0 && (
-                <View className="p-4 rounded-2xl bg-brand-light">
-                  <View className="flex-row items-center gap-2 mb-2">
-                    <Clock size={16} color="#000000" />
+                <Card variant="light">
+                  <View className="flex-row items-center gap-3 mb-2">
+                    <Clock size={18} color="#000000" />
                     <Text className="text-sm font-semibold text-brand-black">
                       Scheduled Check-Ins
                     </Text>
@@ -162,13 +137,13 @@ const HomeScreen = () => {
                   <Text className="text-xs text-brand-muted">
                     {activeScheduled.length} active schedule{activeScheduled.length !== 1 ? 's' : ''}
                   </Text>
-                </View>
+                </Card>
               )}
 
               {trustedContacts.length === 0 && (
-                <Pressable
+                <Card
                   onPress={() => router.push('/flows/contacts')}
-                  className="p-4 rounded-2xl bg-yellow-50 border border-yellow-200 active:opacity-80"
+                  className="bg-yellow-50 border border-yellow-200"
                 >
                   <View className="flex-row items-center gap-3">
                     <Shield size={20} color="#F59E0B" />
@@ -181,11 +156,11 @@ const HomeScreen = () => {
                       </Text>
                     </View>
                   </View>
-                </Pressable>
+                </Card>
               )}
             </View>
           ) : (
-            <View className="mb-6 p-5 rounded-2xl bg-brand-accent">
+            <Card variant="accent" className="mb-6">
               <View className="flex-row items-center justify-between mb-4">
                 <View className="flex-row items-center gap-3">
                   <Clock size={24} color="#000000" strokeWidth={2.5} />
@@ -213,21 +188,21 @@ const HomeScreen = () => {
                 </View>
               )}
 
-              <Pressable
+              <Button
                 onPress={handleConfirmCheckIn}
                 disabled={isProcessing}
-                className="w-full py-4 rounded-xl bg-brand-black active:opacity-90 disabled:opacity-50 shadow-lg"
+                loading={isProcessing}
+                fullWidth
+                size="lg"
               >
-                <Text className="text-center text-brand-white text-lg font-semibold">
-                  {isProcessing ? 'Confirming...' : "I'm Safe — Confirm"}
-                </Text>
-              </Pressable>
-            </View>
+                {isProcessing ? 'Confirming...' : "I'm Safe — Confirm"}
+              </Button>
+            </Card>
           )}
 
           {recentEvents.length > 0 && (
             <View className="mb-6">
-              <View className="flex-row items-center justify-between mb-3">
+              <View className="flex-row items-center justify-between mb-4">
                 <Text className="text-lg font-semibold text-brand-black">
                   Recent Activity
                 </Text>
@@ -240,12 +215,11 @@ const HomeScreen = () => {
                   </Text>
                 </Pressable>
               </View>
-              <View className="gap-2">
+              <View className="gap-3">
                 {recentEvents.map((event) => (
-                  <Pressable
+                  <Card
                     key={event.id}
                     onPress={() => router.push(`/flows/history/${event.id}`)}
-                    className="p-4 rounded-xl bg-white shadow-sm active:opacity-80"
                   >
                     <View className="flex-row items-center justify-between">
                       <View className="flex-row items-center gap-3 flex-1">
@@ -279,16 +253,16 @@ const HomeScreen = () => {
                         </Text>
                       </View>
                     </View>
-                  </Pressable>
+                  </Card>
                 ))}
               </View>
             </View>
           )}
 
           <View className="flex-row gap-3">
-            <Pressable
+            <Card
               onPress={() => router.push('/flows/contacts')}
-              className="flex-1 p-4 rounded-2xl bg-white shadow-sm active:opacity-80"
+              className="flex-1"
             >
               <View className="items-center">
                 <View className="w-12 h-12 rounded-full bg-brand-accent items-center justify-center mb-2">
@@ -301,11 +275,11 @@ const HomeScreen = () => {
                   {trustedContacts.length} contact{trustedContacts.length !== 1 ? 's' : ''}
                 </Text>
               </View>
-            </Pressable>
+            </Card>
 
-            <Pressable
+            <Card
               onPress={() => router.push('/flows/history')}
-              className="flex-1 p-4 rounded-2xl bg-white shadow-sm active:opacity-80"
+              className="flex-1"
             >
               <View className="items-center">
                 <View className="w-12 h-12 rounded-full bg-brand-accent items-center justify-center mb-2">
@@ -318,7 +292,7 @@ const HomeScreen = () => {
                   {events.length} event{events.length !== 1 ? 's' : ''}
                 </Text>
               </View>
-            </Pressable>
+            </Card>
           </View>
         </View>
       </ScrollView>

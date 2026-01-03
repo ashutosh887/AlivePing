@@ -1,5 +1,6 @@
 import { AlertDetailCard } from '@/components/history/AlertDetailCard'
 import { EmptyHistoryState } from '@/components/history/EmptyHistoryState'
+import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { useAppStore } from '@/lib/store'
 import React from 'react'
 import { ScrollView, Text, View } from 'react-native'
@@ -11,22 +12,18 @@ const HistoryScreen = () => {
   const sortedEvents = [...events].sort((a, b) => b.timestamp - a.timestamp)
 
   return (
-    <SafeAreaView className="flex-1 bg-brand-white" edges={['top', 'bottom']}>
+    <SafeAreaView className="flex-1 bg-brand-white" edges={['top']}>
       <View className="flex-1">
-        <View className="pt-8 pb-8 px-6">
-          <Text className="text-3xl font-bold text-brand-black mb-2">
-            History
-          </Text>
-          <Text className="text-base text-brand-muted">
-            View your check-ins and alerts
-          </Text>
-        </View>
+        <ScreenHeader
+          title="History"
+          subtitle="View your check-ins and alerts"
+        />
 
-        <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
+        <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
           {sortedEvents.length === 0 ? (
             <EmptyHistoryState />
           ) : (
-            <View className="gap-4 pb-10">
+            <View className="gap-4">
               {sortedEvents.map((event) => (
                 <AlertDetailCard key={event.id} event={event} />
               ))}

@@ -1,3 +1,4 @@
+import { Card } from '@/components/ui/Card'
 import { ArrowLeft, Shield, Zap } from 'lucide-react-native'
 import { useRouter } from 'expo-router'
 import React from 'react'
@@ -11,7 +12,7 @@ const AboutScreen = () => {
   return (
     <SafeAreaView className="flex-1 bg-brand-white" edges={['top', 'bottom']}>
       <View className="flex-1">
-        <View className="flex-row items-center px-6 pt-4 pb-8">
+        <View className="flex-row items-center px-6 pt-8 pb-6">
           <Pressable
             onPress={() => router.back()}
             className="mr-4 p-2 rounded-xl active:opacity-70"
@@ -25,7 +26,7 @@ const AboutScreen = () => {
 
         <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
           <View className="items-center mb-10">
-            <View className="w-36 h-36 rounded-2xl bg-brand-accent items-center justify-center mb-5 overflow-hidden shadow-sm">
+            <View className="w-36 h-36 rounded-2xl bg-brand-accent items-center justify-center mb-5 overflow-hidden">
               <Image
                 source={require('@/assets/images/logo.png')}
                 className="w-full h-full"
@@ -55,7 +56,7 @@ const AboutScreen = () => {
           </View>
 
           <View className="gap-4 mb-6">
-            <View className="p-5 rounded-2xl bg-white shadow-sm">
+            <Card>
               <View className="flex-row items-center gap-3 mb-3">
                 <Zap size={20} color="#000000" />
                 <Text className="text-base font-semibold text-brand-black">
@@ -65,9 +66,9 @@ const AboutScreen = () => {
               <Text className="text-sm text-brand-muted leading-5">
                 Instant alerts with automatic escalation to ensure help arrives when needed.
               </Text>
-            </View>
+            </Card>
 
-            <View className="p-5 rounded-2xl bg-white shadow-sm">
+            <Card>
               <View className="flex-row items-center gap-3 mb-3">
                 <Shield size={20} color="#000000" />
                 <Text className="text-base font-semibold text-brand-black">
@@ -77,10 +78,10 @@ const AboutScreen = () => {
               <Text className="text-sm text-brand-muted leading-5">
                 Only hashes stored on-chain. No personal information shared without your consent.
               </Text>
-            </View>
+            </Card>
           </View>
 
-          <View className="p-5 rounded-2xl bg-brand-light mb-6">
+          <Card variant="light" className="mb-6">
             <Text className="text-sm font-semibold text-brand-black mb-2">
               Built for
             </Text>
@@ -88,7 +89,7 @@ const AboutScreen = () => {
               Urban commuters, women living alone, elderly parents, students, and anyone 
               who wants an extra layer of safety in their daily life.
             </Text>
-          </View>
+          </Card>
 
           <View className="h-8" />
         </ScrollView>

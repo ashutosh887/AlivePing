@@ -1,3 +1,5 @@
+import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
 import { useAppStore } from '@/lib/store'
 import { formatDate } from '@/lib/utils'
 import * as Linking from 'expo-linking'
@@ -21,12 +23,12 @@ const AlertDetailScreen = () => {
           <Text className="text-lg font-semibold text-brand-muted">
             Event not found
           </Text>
-          <Pressable
+          <Button
             onPress={() => router.back()}
-            className="mt-4 px-6 py-3 rounded-2xl bg-brand-black"
+            className="mt-4"
           >
-            <Text className="text-brand-white font-semibold">Go Back</Text>
-          </Pressable>
+            Go Back
+          </Button>
         </View>
       </SafeAreaView>
     )
@@ -74,7 +76,7 @@ const AlertDetailScreen = () => {
   return (
     <SafeAreaView className="flex-1 bg-brand-white" edges={['top', 'bottom']}>
       <View className="flex-1">
-        <View className="flex-row items-center px-6 pt-4 pb-8">
+        <View className="flex-row items-center px-6 pt-8 pb-6">
           <Pressable
             onPress={() => router.back()}
             className="mr-4 p-2 rounded-xl active:opacity-70"
@@ -98,7 +100,7 @@ const AlertDetailScreen = () => {
           </View>
 
           <View className="gap-4 mb-6">
-            <View className="p-5 rounded-2xl bg-white shadow-sm">
+            <Card>
               <View className="flex-row items-center gap-3 mb-4">
                 <Clock size={20} color="#6B7280" />
                 <Text className="text-sm font-semibold text-brand-muted uppercase tracking-wide">
@@ -111,10 +113,10 @@ const AlertDetailScreen = () => {
               <Text className="text-sm text-brand-muted mt-1">
                 {new Date(event.timestamp).toLocaleString()}
               </Text>
-            </View>
+            </Card>
 
             {event.checkInTime && (
-              <View className="p-5 rounded-2xl bg-white shadow-sm">
+              <Card>
                 <View className="flex-row items-center gap-3 mb-4">
                   <Clock size={20} color="#6B7280" />
                   <Text className="text-sm font-semibold text-brand-muted uppercase tracking-wide">
@@ -124,11 +126,11 @@ const AlertDetailScreen = () => {
                 <Text className="text-lg font-semibold text-brand-black mt-1">
                   {formatDate(event.checkInTime)}
                 </Text>
-              </View>
+              </Card>
             )}
 
             {event.alertTime && (
-              <View className="p-5 rounded-2xl bg-white shadow-sm">
+              <Card>
                 <View className="flex-row items-center gap-3 mb-4">
                   <AlertTriangle size={20} color="#EF4444" />
                   <Text className="text-sm font-semibold text-brand-muted uppercase tracking-wide">
@@ -138,10 +140,10 @@ const AlertDetailScreen = () => {
                 <Text className="text-lg font-semibold text-brand-black mt-1">
                   {formatDate(event.alertTime)}
                 </Text>
-              </View>
+              </Card>
             )}
 
-            <View className="p-5 rounded-2xl bg-white shadow-sm">
+            <Card>
               <View className="flex-row items-center gap-3 mb-4">
                 <MapPin size={20} color="#6B7280" />
                 <Text className="text-sm font-semibold text-brand-muted uppercase tracking-wide">
@@ -158,7 +160,7 @@ const AlertDetailScreen = () => {
                       Accuracy: ±{Math.round(event.location.accuracy)}m
                     </Text>
                   )}
-                  <Pressable
+                  <Button
                     onPress={async () => {
                       const url = `https://maps.google.com/?q=${event.location!.latitude},${event.location!.longitude}`
                       const canOpen = await Linking.canOpenURL(url)
@@ -166,12 +168,12 @@ const AlertDetailScreen = () => {
                         await Linking.openURL(url)
                       }
                     }}
-                    className="mt-3 py-2.5 px-5 rounded-xl bg-brand-light active:opacity-80 self-start"
+                    variant="secondary"
+                    size="sm"
+                    className="mt-3 self-start"
                   >
-                    <Text className="text-sm font-semibold text-brand-black">
-                      Open in Maps
-                    </Text>
-                  </Pressable>
+                    Open in Maps
+                  </Button>
                 </>
               ) : (
                 <>
@@ -183,7 +185,7 @@ const AlertDetailScreen = () => {
                   </Text>
                 </>
               )}
-            </View>
+            </Card>
           </View>
         </ScrollView>
       </View>

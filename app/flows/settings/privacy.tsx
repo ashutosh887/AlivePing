@@ -1,3 +1,4 @@
+import { Card } from '@/components/ui/Card'
 import { SettingsItem } from '@/components/settings/SettingsItem'
 import { SettingsSection } from '@/components/settings/SettingsSection'
 import { useAppStore } from '@/lib/store'
@@ -17,7 +18,7 @@ const PrivacySettingsScreen = () => {
   return (
     <SafeAreaView className="flex-1 bg-brand-white" edges={['top', 'bottom']}>
       <View className="flex-1">
-        <View className="flex-row items-center px-6 pt-4 pb-8">
+        <View className="flex-row items-center px-6 pt-8 pb-6">
           <Pressable
             onPress={() => router.back()}
             className="mr-4 p-2 rounded-xl active:opacity-70"
@@ -31,7 +32,7 @@ const PrivacySettingsScreen = () => {
 
         <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
           <SettingsSection title="Data Retention">
-            <View className="rounded-2xl bg-white overflow-hidden shadow-sm">
+            <View className="rounded-2xl bg-white overflow-hidden">
               {retentionOptions.map((days, index) => (
                 <React.Fragment key={days}>
                   {index > 0 && <View className="h-px bg-brand-light mx-5" />}
@@ -51,12 +52,12 @@ const PrivacySettingsScreen = () => {
             </View>
           </SettingsSection>
 
-          <View className="p-5 rounded-2xl bg-brand-light mb-6">
+          <Card variant="light" className="mb-6">
             <Text className="text-sm text-brand-muted leading-6">
               Data retention determines how long your check-in and alert history is stored locally. 
               After this period, old data will be automatically deleted.
             </Text>
-          </View>
+          </Card>
 
           <View className="h-8" />
         </ScrollView>
