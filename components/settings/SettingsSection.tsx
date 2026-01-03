@@ -8,8 +8,8 @@ type SettingsSectionProps = {
 
 export const SettingsSection = ({ title, children }: SettingsSectionProps) => {
   return (
-    <View className="mb-6">
-      <Text className="text-sm font-semibold text-brand-muted uppercase mb-3 px-1">
+    <View className="mb-5">
+      <Text className="text-xs font-semibold text-brand-muted uppercase mb-3 px-1 tracking-wide">
         {title}
       </Text>
       {children}

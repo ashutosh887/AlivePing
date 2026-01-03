@@ -24,11 +24,11 @@ export const SettingsItem = ({
   showArrow = false,
 }: SettingsItemProps) => {
   const content = (
-    <View className="flex-row items-center justify-between py-4.5 px-5">
-      <View className="flex-row items-center gap-4 flex-1">
+    <View className="flex-row items-center justify-between py-4 px-5">
+      <View className="flex-row items-center gap-3 flex-1">
         {Icon && (
-          <View className="w-11 h-11 rounded-xl bg-brand-accent items-center justify-center shadow-sm">
-            <Icon size={20} color="#000000" />
+          <View className="w-10 h-10 rounded-xl bg-brand-accent items-center justify-center">
+            <Icon size={18} color="#000000" />
           </View>
         )}
         
@@ -37,7 +37,7 @@ export const SettingsItem = ({
             {title}
           </Text>
           {subtitle && (
-            <Text className="text-sm text-brand-muted mt-1 leading-4">
+            <Text className="text-sm text-brand-muted mt-0.5 leading-5">
               {subtitle}
             </Text>
           )}
@@ -55,7 +55,7 @@ export const SettingsItem = ({
           />
         )}
         {showArrow && !onToggle && (
-          <Text className="text-brand-muted text-2xl">›</Text>
+          <Text className="text-brand-muted text-xl">›</Text>
         )}
       </View>
     </View>

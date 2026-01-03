@@ -1,8 +1,9 @@
+import { Button } from '@/components/ui/Button'
 import { useCheckIn } from '@/lib/hooks/useCheckIn'
 import * as Haptics from 'expo-haptics'
 import { AlertTriangle } from 'lucide-react-native'
 import React, { useEffect, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 export const AlertScreen = () => {
@@ -44,7 +45,7 @@ export const AlertScreen = () => {
   return (
     <SafeAreaView className="flex-1 bg-red-50" edges={['top', 'bottom']}>
       <View className="flex-1 items-center justify-center px-6">
-        <View className="w-36 h-36 rounded-full bg-red-100 items-center justify-center mb-10 shadow-lg">
+        <View className="w-36 h-36 rounded-full bg-red-100 items-center justify-center mb-10">
           <AlertTriangle size={72} color="#EF4444" fill="#EF4444" />
         </View>
 
@@ -66,14 +67,15 @@ export const AlertScreen = () => {
         )}
 
         {timeRemaining > 0 ? (
-          <Pressable
+          <Button
             onPress={handleCancel}
-            className="w-full py-5 rounded-2xl bg-brand-white active:opacity-90 shadow-lg"
+            variant="secondary"
+            size="lg"
+            fullWidth
+            className="bg-brand-white"
           >
-            <Text className="text-center text-brand-black text-xl font-semibold">
-              Cancel Alert
-            </Text>
-          </Pressable>
+            Cancel Alert
+          </Button>
         ) : (
           <View className="w-full py-5 rounded-2xl bg-brand-light">
             <Text className="text-center text-brand-muted text-xl font-semibold">

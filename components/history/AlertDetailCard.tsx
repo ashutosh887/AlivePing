@@ -1,9 +1,10 @@
+import { Card } from '@/components/ui/Card'
 import { Event } from '@/lib/store'
 import { formatDate } from '@/lib/utils'
 import { useRouter } from 'expo-router'
 import { AlertTriangle, CheckCircle2, Clock, XCircle } from 'lucide-react-native'
 import React from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Text, View } from 'react-native'
 
 type AlertDetailCardProps = {
   event: Event
@@ -28,13 +29,13 @@ export const AlertDetailCard = ({ event }: AlertDetailCardProps) => {
   const getStatusColor = () => {
     switch (event.status) {
       case 'confirmed':
-        return 'bg-green-50 border-green-200'
+        return 'bg-green-50 border border-green-200'
       case 'cancelled':
-        return 'bg-gray-50 border-gray-200'
+        return 'bg-gray-50 border border-gray-200'
       case 'triggered':
-        return 'bg-red-50 border-red-200'
+        return 'bg-red-50 border border-red-200'
       default:
-        return 'bg-white border-brand-light'
+        return 'bg-white border border-brand-light'
     }
   }
 
@@ -52,16 +53,16 @@ export const AlertDetailCard = ({ event }: AlertDetailCardProps) => {
   }
 
       return (
-        <Pressable
+        <Card
           onPress={() => router.push(`/flows/history/${event.id}`)}
-          className={`p-5 rounded-2xl ${getStatusColor()} active:opacity-80 shadow-sm`}
+          className={getStatusColor()}
         >
           <View className="flex-row items-start justify-between">
             <View className="flex-1 flex-row items-start gap-4">
               <View className="mt-0.5">{getStatusIcon()}</View>
               
               <View className="flex-1">
-                <View className="flex-row items-center gap-2.5 mb-2.5">
+                <View className="flex-row items-center gap-3 mb-2.5">
                   <Text className="text-lg font-semibold text-brand-black">
                     {getTypeLabel()}
                   </Text>
@@ -84,7 +85,7 @@ export const AlertDetailCard = ({ event }: AlertDetailCardProps) => {
               </View>
             </View>
           </View>
-        </Pressable>
+        </Card>
       )
 }
 
