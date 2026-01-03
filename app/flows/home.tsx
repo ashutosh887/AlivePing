@@ -1,55 +1,73 @@
+import { AlertScreen } from '@/components/alert/AlertScreen'
+import { useCheckIn } from '@/lib/hooks/useCheckIn'
+import { getSession } from '@/lib/solana/program'
+import { getWalletPublicKey } from '@/lib/solana/wallet'
 import { useAppStore } from '@/lib/store'
+import { formatDate, formatTime } from '@/lib/utils'
 import * as Haptics from 'expo-haptics'
-import { Clock } from 'lucide-react-native'
+import { useRouter } from 'expo-router'
+import { AlertTriangle, Clock, Shield, Zap } from 'lucide-react-native'
 import React, { useEffect, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 const HomeScreen = () => {
-  const checkIn = useAppStore((s) => s.checkIn)
-  const startCheckIn = useAppStore((s) => s.startCheckIn)
-  const confirmCheckIn = useAppStore((s) => s.confirmCheckIn)
-  const triggerAlert = useAppStore((s) => s.triggerAlert)
-  const cancelAlert = useAppStore((s) => s.cancelAlert)
-  const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
+  const router = useRouter()
+  const {
+    checkIn,
+    timeRemaining,
+    isAlertActive,
+    isProcessing,
+    startCheckIn,
+    confirmCheckIn,
+  } = useCheckIn()
+  
+  const events = useAppStore((s) => s.events)
+  const trustedContacts = useAppStore((s) => s.trustedContacts)
+  const scheduledCheckIns = useAppStore((s) => s.scheduledCheckIns)
+  const triggerPanicStore = useAppStore((s) => s.triggerPanic)
+  const [walletAddress, setWalletAddress] = useState<string | null>(null)
+  const [onChainStatus, setOnChainStatus] = useState<string | null>(null)
+  const [isLoadingStatus, setIsLoadingStatus] = useState(false)
 
   useEffect(() => {
-    if (!checkIn?.isActive) {
-      setTimeRemaining(null)
-      return
+    loadWalletInfo()
+  }, [])
+
+  useEffect(() => {
+    if (checkIn?.isActive) {
+      checkOnChainStatus()
     }
+  }, [checkIn?.isActive])
 
-    const isAlertActive = checkIn.graceWindowEnd && Date.now() < checkIn.graceWindowEnd
-    if (isAlertActive) {
-      setTimeRemaining(0)
-      return
+  const loadWalletInfo = async () => {
+    try {
+      const address = await getWalletPublicKey()
+      setWalletAddress(address)
+    } catch (error) {
+      console.error('Load wallet error:', error)
     }
+  }
 
-    const interval = setInterval(() => {
-      const now = Date.now()
-      const remaining = checkIn.checkInTime - now
-
-      if (remaining <= 0) {
-        triggerAlert()
-        setTimeRemaining(0)
+  const checkOnChainStatus = async () => {
+    setIsLoadingStatus(true)
+    try {
+      const session = await getSession()
+      if (session) {
+        const statuses = ['Active', 'Confirmed', 'Expired', 'Panic', 'Closed']
+        setOnChainStatus(statuses[session.status] || 'Unknown')
       } else {
-        setTimeRemaining(remaining)
+        setOnChainStatus('Not on-chain')
       }
-    }, 1000)
+    } catch (error) {
+      setOnChainStatus('Error')
+    } finally {
+      setIsLoadingStatus(false)
+    }
+  }
 
-    const now = Date.now()
-    const remaining = checkIn.checkInTime - now
-    setTimeRemaining(remaining > 0 ? remaining : 0)
-
-    return () => clearInterval(interval)
-  }, [checkIn, triggerAlert])
-
-  const formatTime = (ms: number) => {
-    if (ms <= 0) return '00:00'
-    const totalSeconds = Math.floor(ms / 1000)
-    const minutes = Math.floor(totalSeconds / 60)
-    const seconds = totalSeconds % 60
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+  if (isAlertActive) {
+    return <AlertScreen />
   }
 
   const handleStartCheckIn = async () => {
@@ -62,75 +80,134 @@ const HomeScreen = () => {
     confirmCheckIn()
   }
 
-  const isAlertActive = checkIn?.graceWindowEnd && Date.now() < checkIn.graceWindowEnd
+  const handlePanic = async () => {
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+    const locationService = await import('@/lib/location/locationService')
+    const solanaProgram = await import('@/lib/solana/program')
+    const location = await locationService.getCurrentLocation()
+    triggerPanicStore(location ? {
+      latitude: location.latitude,
+      longitude: location.longitude,
+      accuracy: location.accuracy,
+    } : undefined)
+    
+    try {
+      const locationHash = location ? await locationService.hashLocation(location) : new Array(32).fill(0)
+      await solanaProgram.triggerPanic(locationHash)
+    } catch (error) {
+      console.error('Solana panic error:', error)
+    }
+  }
+
+  const recentEvents = events.slice(0, 3)
+  const activeScheduled = scheduledCheckIns.filter(s => s.isActive)
 
   return (
     <SafeAreaView className="flex-1 bg-brand-white" edges={['top', 'bottom']}>
-      <View className="flex-1 px-6">
-        <View className="pt-8 pb-6">
-          <Text className="text-3xl font-bold text-brand-black mb-2">
-            Safety Check-In
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+        <View className="px-6 pt-8 pb-6">
+          <View className="flex-row items-center justify-between mb-2">
+            <Text className="text-3xl font-bold text-brand-black">
+              Safety Hub
+            </Text>
+            {walletAddress && (
+              <Pressable
+                onPress={() => router.push('/flows/settings')}
+                className="px-3 py-1.5 rounded-full bg-brand-light active:opacity-80"
+              >
+                <Text className="text-xs font-semibold text-brand-black">
+                  {walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+          <Text className="text-base text-brand-muted mb-6">
+            Your personal safety command center
           </Text>
-          <Text className="text-base text-brand-muted">
-            Stay connected with your trusted contacts
-          </Text>
-        </View>
 
-        <View className="flex-1 items-center justify-center">
           {!checkIn?.isActive ? (
-            <View className="w-full items-center">
-              <View className="w-24 h-24 rounded-full bg-brand-accent items-center justify-center mb-8">
-                <Clock size={48} color="#000000" strokeWidth={2} />
+            <View className="gap-4 mb-6">
+              <View className="flex-row gap-3">
+                <Pressable
+                  onPress={handleStartCheckIn}
+                  disabled={isProcessing}
+                  className="flex-1 py-5 rounded-2xl bg-brand-black active:opacity-90 disabled:opacity-50 shadow-lg items-center justify-center"
+                >
+                  <Clock size={28} color="#FFFFFF" strokeWidth={2.5} />
+                  <Text className="text-center text-brand-white text-lg font-semibold mt-2">
+                    {isProcessing ? 'Starting...' : 'Start Check-In'}
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={handlePanic}
+                  disabled={isProcessing}
+                  className="flex-1 py-5 rounded-2xl bg-red-600 active:opacity-90 disabled:opacity-50 shadow-lg items-center justify-center"
+                >
+                  <AlertTriangle size={28} color="#FFFFFF" fill="#FFFFFF" strokeWidth={2.5} />
+                  <Text className="text-center text-brand-white text-lg font-semibold mt-2">
+                    Panic
+                  </Text>
+                </Pressable>
               </View>
 
-              <Pressable
-                onPress={handleStartCheckIn}
-                className="w-full py-5 rounded-xl border-2 border-brand-black bg-brand-black active:opacity-80"
-              >
-                <Text className="text-center text-brand-white text-xl font-semibold">
-                  Start Safety Check-In
-                </Text>
-              </Pressable>
+              {activeScheduled.length > 0 && (
+                <View className="p-4 rounded-2xl bg-brand-light">
+                  <View className="flex-row items-center gap-2 mb-2">
+                    <Clock size={16} color="#000000" />
+                    <Text className="text-sm font-semibold text-brand-black">
+                      Scheduled Check-Ins
+                    </Text>
+                  </View>
+                  <Text className="text-xs text-brand-muted">
+                    {activeScheduled.length} active schedule{activeScheduled.length !== 1 ? 's' : ''}
+                  </Text>
+                </View>
+              )}
 
-              <Text className="mt-4 text-sm text-brand-muted text-center px-4">
-                You'll need to confirm you're safe in 5 minutes
-              </Text>
-            </View>
-          ) : isAlertActive ? (
-            <View className="w-full items-center">
-              <View className="w-24 h-24 rounded-full bg-red-100 items-center justify-center mb-8">
-                <Text className="text-4xl">🚨</Text>
-              </View>
-
-              <Text className="text-2xl font-bold text-brand-black mb-2 text-center">
-                Alert Active
-              </Text>
-              <Text className="text-base text-brand-muted text-center mb-6 px-4">
-                Your trusted contacts have been notified. You can cancel during the grace window.
-              </Text>
-
-              <Pressable
-                onPress={async () => {
-                  await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-                  cancelAlert()
-                }}
-                className="w-full py-5 rounded-xl border-2 border-brand-black bg-brand-white active:opacity-80"
-              >
-                <Text className="text-center text-brand-black text-xl font-semibold">
-                  Cancel Alert
-                </Text>
-              </Pressable>
+              {trustedContacts.length === 0 && (
+                <Pressable
+                  onPress={() => router.push('/flows/contacts')}
+                  className="p-4 rounded-2xl bg-yellow-50 border border-yellow-200 active:opacity-80"
+                >
+                  <View className="flex-row items-center gap-3">
+                    <Shield size={20} color="#F59E0B" />
+                    <View className="flex-1">
+                      <Text className="text-sm font-semibold text-brand-black">
+                        Add Trusted Contacts
+                      </Text>
+                      <Text className="text-xs text-brand-muted mt-0.5">
+                        No emergency contacts configured
+                      </Text>
+                    </View>
+                  </View>
+                </Pressable>
+              )}
             </View>
           ) : (
-            <View className="w-full items-center">
-              <View className="w-24 h-24 rounded-full bg-brand-accent items-center justify-center mb-8">
-                <Clock size={48} color="#000000" strokeWidth={2} />
+            <View className="mb-6 p-5 rounded-2xl bg-brand-accent">
+              <View className="flex-row items-center justify-between mb-4">
+                <View className="flex-row items-center gap-3">
+                  <Clock size={24} color="#000000" strokeWidth={2.5} />
+                  <Text className="text-lg font-semibold text-brand-black">
+                    Active Check-In
+                  </Text>
+                </View>
+                {isLoadingStatus ? (
+                  <ActivityIndicator size="small" color="#000000" />
+                ) : onChainStatus && (
+                  <View className="px-2.5 py-1 rounded-full bg-brand-black">
+                    <Text className="text-xs font-semibold text-brand-white">
+                      {onChainStatus}
+                    </Text>
+                  </View>
+                )}
               </View>
 
               {timeRemaining !== null && timeRemaining > 0 && (
-                <View className="mb-6 items-center">
-                  <Text className="text-sm text-brand-muted mb-2">Time remaining</Text>
-                  <Text className="text-4xl font-bold text-brand-black">
+                <View className="mb-4">
+                  <Text className="text-sm text-brand-muted mb-2 font-medium">Time remaining</Text>
+                  <Text className="text-4xl font-bold text-brand-black tracking-tight">
                     {formatTime(timeRemaining)}
                   </Text>
                 </View>
@@ -138,20 +215,113 @@ const HomeScreen = () => {
 
               <Pressable
                 onPress={handleConfirmCheckIn}
-                className="w-full py-5 rounded-xl border-2 border-brand-black bg-brand-black active:opacity-80"
+                disabled={isProcessing}
+                className="w-full py-4 rounded-xl bg-brand-black active:opacity-90 disabled:opacity-50 shadow-lg"
               >
-                <Text className="text-center text-brand-white text-xl font-semibold">
-                  I'm Safe — Confirm Check-In
+                <Text className="text-center text-brand-white text-lg font-semibold">
+                  {isProcessing ? 'Confirming...' : "I'm Safe — Confirm"}
                 </Text>
               </Pressable>
-
-              <Text className="mt-4 text-sm text-brand-muted text-center px-4">
-                Confirm before the timer runs out to prevent an alert
-              </Text>
             </View>
           )}
+
+          {recentEvents.length > 0 && (
+            <View className="mb-6">
+              <View className="flex-row items-center justify-between mb-3">
+                <Text className="text-lg font-semibold text-brand-black">
+                  Recent Activity
+                </Text>
+                <Pressable
+                  onPress={() => router.push('/flows/history')}
+                  className="active:opacity-70"
+                >
+                  <Text className="text-sm font-semibold text-brand-muted">
+                    View All
+                  </Text>
+                </Pressable>
+              </View>
+              <View className="gap-2">
+                {recentEvents.map((event) => (
+                  <Pressable
+                    key={event.id}
+                    onPress={() => router.push(`/flows/history/${event.id}`)}
+                    className="p-4 rounded-xl bg-white shadow-sm active:opacity-80"
+                  >
+                    <View className="flex-row items-center justify-between">
+                      <View className="flex-row items-center gap-3 flex-1">
+                        {event.type === 'PANIC' ? (
+                          <AlertTriangle size={20} color="#EF4444" />
+                        ) : event.type === 'ALERT' ? (
+                          <AlertTriangle size={20} color="#F59E0B" />
+                        ) : (
+                          <Clock size={20} color="#6B7280" />
+                        )}
+                        <View className="flex-1">
+                          <Text className="text-sm font-semibold text-brand-black">
+                            {event.type === 'PANIC' ? 'Panic Alert' : event.type === 'ALERT' ? 'Alert' : 'Check-In'}
+                          </Text>
+                          <Text className="text-xs text-brand-muted mt-0.5">
+                            {formatDate(event.timestamp)}
+                          </Text>
+                        </View>
+                      </View>
+                      <View className={`px-2.5 py-1 rounded-full ${
+                        event.status === 'confirmed' ? 'bg-green-100' :
+                        event.status === 'triggered' ? 'bg-red-100' :
+                        'bg-gray-100'
+                      }`}>
+                        <Text className={`text-xs font-medium ${
+                          event.status === 'confirmed' ? 'text-green-700' :
+                          event.status === 'triggered' ? 'text-red-700' :
+                          'text-gray-700'
+                        }`}>
+                          {event.status}
+                        </Text>
+                      </View>
+                    </View>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          )}
+
+          <View className="flex-row gap-3">
+            <Pressable
+              onPress={() => router.push('/flows/contacts')}
+              className="flex-1 p-4 rounded-2xl bg-white shadow-sm active:opacity-80"
+            >
+              <View className="items-center">
+                <View className="w-12 h-12 rounded-full bg-brand-accent items-center justify-center mb-2">
+                  <Shield size={24} color="#000000" />
+                </View>
+                <Text className="text-sm font-semibold text-brand-black">
+                  Contacts
+                </Text>
+                <Text className="text-xs text-brand-muted mt-0.5">
+                  {trustedContacts.length} contact{trustedContacts.length !== 1 ? 's' : ''}
+                </Text>
+              </View>
+            </Pressable>
+
+            <Pressable
+              onPress={() => router.push('/flows/history')}
+              className="flex-1 p-4 rounded-2xl bg-white shadow-sm active:opacity-80"
+            >
+              <View className="items-center">
+                <View className="w-12 h-12 rounded-full bg-brand-accent items-center justify-center mb-2">
+                  <Zap size={24} color="#000000" />
+                </View>
+                <Text className="text-sm font-semibold text-brand-black">
+                  History
+                </Text>
+                <Text className="text-xs text-brand-muted mt-0.5">
+                  {events.length} event{events.length !== 1 ? 's' : ''}
+                </Text>
+              </View>
+            </Pressable>
+          </View>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   )
 }
