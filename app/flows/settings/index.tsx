@@ -1,6 +1,7 @@
 import { SettingsItem } from '@/components/settings/SettingsItem'
 import { SettingsSection } from '@/components/settings/SettingsSection'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
+import { Button } from '@/components/ui/Button'
 import { useAppStore } from '@/lib/store'
 import { clearWallet } from '@/lib/solana/wallet'
 import configs from '@/config'
@@ -25,6 +26,7 @@ const SettingsScreen = () => {
   const [durationInput, setDurationInput] = useState(appSettings.checkInDurationMinutes.toString())
   const [showPhoneInput, setShowPhoneInput] = useState(false)
   const [phoneInput, setPhoneInput] = useState(appSettings.userPhoneNumber || '')
+  const [isSaving, setIsSaving] = useState(false)
 
   return (
     <SafeAreaView className="flex-1 bg-brand-white" edges={['top']}>
@@ -42,16 +44,9 @@ const SettingsScreen = () => {
                 title="Check-In Duration"
                 subtitle={`${appSettings.checkInDurationMinutes} minute${appSettings.checkInDurationMinutes !== 1 ? 's' : ''} ahead`}
                 onPress={() => {
-                  if (showDurationInput) {
-                    const minutes = parseInt(durationInput, 10)
-                    if (minutes >= 1 && minutes <= 60) {
-                      updateAppSettings({ checkInDurationMinutes: minutes })
-                      setShowDurationInput(false)
-                    } else {
-                      Alert.alert('Invalid Duration', 'Please enter a value between 1 and 60 minutes.')
-                    }
-                  } else {
+                  if (!showDurationInput) {
                     setShowDurationInput(true)
+                    setDurationInput(appSettings.checkInDurationMinutes.toString())
                   }
                 }}
                 showArrow={!showDurationInput}
@@ -65,30 +60,45 @@ const SettingsScreen = () => {
                     placeholder="Minutes (1-60)"
                     className="mt-3 px-4 py-3 rounded-xl bg-brand-light text-brand-black"
                     autoFocus
+                    editable={!isSaving}
                   />
-                  <View className="flex-row gap-3 mt-3">
+                  <View className="flex-row gap-3 mt-4">
                     <View className="flex-1">
-                      <SettingsItem
-                        title="Cancel"
+                      <Button
                         onPress={() => {
                           setShowDurationInput(false)
                           setDurationInput(appSettings.checkInDurationMinutes.toString())
                         }}
-                      />
+                        disabled={isSaving}
+                        variant="outline"
+                        size="sm"
+                        fullWidth
+                      >
+                        Cancel
+                      </Button>
                     </View>
                     <View className="flex-1">
-                      <SettingsItem
-                        title="Save"
+                      <Button
                         onPress={() => {
+                          if (isSaving) return
+                          setIsSaving(true)
                           const minutes = parseInt(durationInput, 10)
                           if (minutes >= 1 && minutes <= 60) {
                             updateAppSettings({ checkInDurationMinutes: minutes })
                             setShowDurationInput(false)
+                            setIsSaving(false)
                           } else {
                             Alert.alert('Invalid Duration', 'Please enter a value between 1 and 60 minutes.')
+                            setIsSaving(false)
                           }
                         }}
-                      />
+                        disabled={isSaving}
+                        loading={isSaving}
+                        size="sm"
+                        fullWidth
+                      >
+                        Save
+                      </Button>
                     </View>
                   </View>
                 </View>
@@ -99,16 +109,9 @@ const SettingsScreen = () => {
                 title="Your Phone Number"
                 subtitle={appSettings.userPhoneNumber || "Add your phone as trusted contact"}
                 onPress={() => {
-                  if (showPhoneInput) {
-                    if (phoneInput.trim()) {
-                      updateAppSettings({ userPhoneNumber: phoneInput.trim() })
-                      setShowPhoneInput(false)
-                    } else {
-                      updateAppSettings({ userPhoneNumber: null })
-                      setShowPhoneInput(false)
-                    }
-                  } else {
+                  if (!showPhoneInput) {
                     setShowPhoneInput(true)
+                    setPhoneInput(appSettings.userPhoneNumber || '')
                   }
                 }}
                 showArrow={!showPhoneInput}
@@ -122,30 +125,43 @@ const SettingsScreen = () => {
                     placeholder="+1234567890"
                     className="mt-3 px-4 py-3 rounded-xl bg-brand-light text-brand-black"
                     autoFocus
+                    editable={!isSaving}
                   />
-                  <View className="flex-row gap-3 mt-3">
+                  <View className="flex-row gap-3 mt-4">
                     <View className="flex-1">
-                      <SettingsItem
-                        title="Cancel"
+                      <Button
                         onPress={() => {
                           setShowPhoneInput(false)
                           setPhoneInput(appSettings.userPhoneNumber || '')
                         }}
-                      />
+                        disabled={isSaving}
+                        variant="outline"
+                        size="sm"
+                        fullWidth
+                      >
+                        Cancel
+                      </Button>
                     </View>
                     <View className="flex-1">
-                      <SettingsItem
-                        title="Save"
+                      <Button
                         onPress={() => {
+                          if (isSaving) return
+                          setIsSaving(true)
                           if (phoneInput.trim()) {
                             updateAppSettings({ userPhoneNumber: phoneInput.trim() })
-                            setShowPhoneInput(false)
                           } else {
                             updateAppSettings({ userPhoneNumber: null })
-                            setShowPhoneInput(false)
                           }
+                          setShowPhoneInput(false)
+                          setIsSaving(false)
                         }}
-                      />
+                        disabled={isSaving}
+                        loading={isSaving}
+                        size="sm"
+                        fullWidth
+                      >
+                        Save
+                      </Button>
                     </View>
                   </View>
                 </View>
