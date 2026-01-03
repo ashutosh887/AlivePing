@@ -22,11 +22,6 @@ export const getProgram = async (): Promise<Program> => {
     const wallet = await getWalletProvider()
     const programId = getProgramId()
     
-    const defaultPubkey = new PublicKey('11111111111111111111111111111111')
-    if (programId.equals(defaultPubkey)) {
-      console.warn('Using default program ID. Please deploy contract and update EXPO_PUBLIC_SOLANA_PROGRAM_ID in .env')
-    }
-    
     const provider = new AnchorProvider(connection, wallet, {
       commitment: 'confirmed',
     })
@@ -37,6 +32,9 @@ export const getProgram = async (): Promise<Program> => {
     console.error('Error creating program:', error)
     if (error.message?.includes('_bn')) {
       throw new Error('Program initialization failed. Please ensure the contract is deployed and EXPO_PUBLIC_SOLANA_PROGRAM_ID is set correctly.')
+    }
+    if (error.message?.includes('EXPO_PUBLIC_SOLANA_PROGRAM_ID')) {
+      throw error
     }
     throw error
   }

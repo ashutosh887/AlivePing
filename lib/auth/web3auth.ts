@@ -6,10 +6,10 @@ const clientId = process.env.EXPO_PUBLIC_WEB3AUTH_CLIENT_ID || ''
 
 const chainConfig = {
   chainNamespace: CHAIN_NAMESPACES.SOLANA,
-  chainId: '0x3',
-  rpcTarget: clusterApiUrl('devnet'),
-  displayName: 'Solana Devnet',
-  blockExplorerUrl: 'https://explorer.solana.com/?cluster=devnet',
+  chainId: '0x3', // Testnet chain ID
+  rpcTarget: clusterApiUrl('testnet'),
+  displayName: 'Solana Testnet',
+  blockExplorerUrl: 'https://explorer.solana.com/?cluster=testnet',
   ticker: 'SOL',
   tickerName: 'Solana',
   logo: 'https://cryptologos.cc/logos/solana-sol-logo.png',
