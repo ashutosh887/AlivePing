@@ -6,10 +6,45 @@ const RPC_ENDPOINTS = {
   mainnet: 'https://api.mainnet-beta.solana.com',
 }
 
+const BACKUP_RPC_ENDPOINTS = {
+  testnet: [
+    'https://api.testnet.solana.com',
+    'https://rpc.ankr.com/solana_testnet',
+    'https://solana-testnet-rpc.allthatnode.com',
+  ],
+  devnet: [
+    'https://api.devnet.solana.com',
+    'https://rpc.ankr.com/solana_devnet',
+  ],
+  mainnet: [
+    'https://api.mainnet-beta.solana.com',
+    'https://rpc.ankr.com/solana',
+    'https://solana-api.projectserum.com',
+  ],
+}
+
+let currentRpcIndex = 0
+
 export const getConnection = (network: 'testnet' | 'devnet' | 'mainnet' = 'testnet'): Connection => {
-  return new Connection(RPC_ENDPOINTS[network], {
+  const customRpc = process.env.EXPO_PUBLIC_SOLANA_RPC_URL
+  if (customRpc) {
+    return new Connection(customRpc, {
+      commitment: 'confirmed' as Commitment,
+    })
+  }
+
+  const endpoints = BACKUP_RPC_ENDPOINTS[network] || [RPC_ENDPOINTS[network]]
+  const endpoint = endpoints[currentRpcIndex % endpoints.length]
+  
+  return new Connection(endpoint, {
     commitment: 'confirmed' as Commitment,
   })
+}
+
+export const switchToBackupRPC = (network: 'testnet' | 'devnet' | 'mainnet' = 'testnet') => {
+  const endpoints = BACKUP_RPC_ENDPOINTS[network] || [RPC_ENDPOINTS[network]]
+  currentRpcIndex = (currentRpcIndex + 1) % endpoints.length
+  console.log(`Switched to backup RPC: ${endpoints[currentRpcIndex]}`)
 }
 
 export const getProgramId = (): PublicKey => {
