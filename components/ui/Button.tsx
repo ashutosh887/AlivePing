@@ -6,7 +6,7 @@ type ButtonProps = {
   onPress?: () => void
   disabled?: boolean
   loading?: boolean
-  variant?: 'primary' | 'secondary' | 'danger' | 'outline' | 'phantom'
+  variant?: 'primary' | 'secondary' | 'danger' | 'outline'
   size?: 'sm' | 'md' | 'lg'
   className?: string
   fullWidth?: boolean
@@ -29,7 +29,6 @@ export const Button = ({
     secondary: 'bg-brand-light active:opacity-80 disabled:opacity-50',
     danger: 'bg-red-600 active:opacity-90 disabled:opacity-50',
     outline: 'bg-white border border-brand-black active:opacity-80 disabled:opacity-50',
-    phantom: 'bg-purple-600 active:opacity-90 disabled:opacity-50',
   }
 
   const sizeClasses = {
@@ -49,7 +48,6 @@ export const Button = ({
     secondary: 'text-brand-black',
     danger: 'text-brand-white',
     outline: 'text-brand-black',
-    phantom: 'text-brand-white',
   }
 
   const combinedClasses = `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${fullWidth ? 'w-full' : ''} ${className}`
@@ -62,7 +60,7 @@ export const Button = ({
     >
       {loading ? (
         <ActivityIndicator
-          color={variant === 'primary' || variant === 'danger' || variant === 'phantom' ? '#FFFFFF' : '#000000'}
+          color={variant === 'primary' || variant === 'danger' ? '#FFFFFF' : '#000000'}
           size="small"
         />
       ) : (

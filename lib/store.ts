@@ -57,9 +57,14 @@ export type PrivacySettings = {
   analyticsEnabled: boolean;
 };
 
+export type AppSettings = {
+  checkInDurationMinutes: number; // Pre-set check-in time (default 5 minutes)
+  userPhoneNumber: string | null; // User's own phone number (for self as trusted contact)
+};
+
 export type WalletState = {
   publicKey: string | null;
-  type: 'local' | 'phantom' | null;
+  type: 'mobile_wallet_adapter' | null;
   isConnected: boolean;
   lastConnected: number | null;
 };
@@ -71,6 +76,7 @@ type Store = {
   scheduledCheckIns: ScheduledCheckIn[];
   notificationPreferences: NotificationPreferences;
   privacySettings: PrivacySettings;
+  appSettings: AppSettings;
   wallet: WalletState;
   startCheckIn: (location?: { latitude: number; longitude: number; accuracy: number | null }) => void;
   confirmCheckIn: () => void;
@@ -88,12 +94,13 @@ type Store = {
   updateScheduledCheckIn: (id: string, updates: Partial<ScheduledCheckIn>) => void;
   updateNotificationPreferences: (prefs: Partial<NotificationPreferences>) => void;
   updatePrivacySettings: (settings: Partial<PrivacySettings>) => void;
+  updateAppSettings: (settings: Partial<AppSettings>) => void;
   setWallet: (wallet: Partial<WalletState>) => void;
   clearWallet: () => void;
   resetStore: () => void;
 };
 
-const CHECK_IN_DURATION_MS = 5 * 60 * 1000;
+const DEFAULT_CHECK_IN_DURATION_MS = 5 * 60 * 1000;
 const GRACE_WINDOW_MS = 2 * 60 * 1000;
 
 export const useAppStore = create<Store>()(
@@ -116,6 +123,10 @@ export const useAppStore = create<Store>()(
         dataRetentionDays: 30,
         analyticsEnabled: false,
       },
+      appSettings: {
+        checkInDurationMinutes: 5, // Default 5 minutes
+        userPhoneNumber: null,
+      },
       wallet: {
         publicKey: null,
         type: null,
@@ -125,7 +136,8 @@ export const useAppStore = create<Store>()(
 
       startCheckIn: (location?: { latitude: number; longitude: number; accuracy: number | null }) => {
         const now = Date.now();
-        const checkInTime = now + CHECK_IN_DURATION_MS;
+        const durationMs = (get().appSettings.checkInDurationMinutes || 5) * 60 * 1000;
+        const checkInTime = now + durationMs;
         set({
           checkIn: {
             isActive: true,
@@ -260,6 +272,14 @@ export const useAppStore = create<Store>()(
           },
         })),
 
+      updateAppSettings: (settings) =>
+        set((state) => ({
+          appSettings: {
+            ...state.appSettings,
+            ...settings,
+          },
+        })),
+
       setWallet: (wallet) =>
         set((state) => ({
           wallet: {
@@ -336,6 +356,10 @@ export const useAppStore = create<Store>()(
             shareLastSeen: true,
             dataRetentionDays: 30,
             analyticsEnabled: false,
+          },
+          appSettings: {
+            checkInDurationMinutes: 5,
+            userPhoneNumber: null,
           },
           wallet: {
             publicKey: null,

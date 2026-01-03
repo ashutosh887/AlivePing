@@ -6,4 +6,6 @@ export default {
     appAuthorGitHub: "https://github.com/ashutosh887",
     appTeam: "DevSapiens",
     solanaUrl: "https://solana.com",
+    appUrl: "https://ashutosh887.in",
+    appIcon: "https://www.ashutosh887.in/me.jpg",
 }

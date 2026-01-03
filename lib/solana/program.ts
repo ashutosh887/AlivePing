@@ -4,7 +4,8 @@ import { Buffer } from 'buffer'
 import 'react-native-get-random-values'
 import { getConnection, getProgramId } from './connection'
 import { IDL } from './idl'
-import { getOrCreateWallet } from './wallet'
+import { getWalletInfo } from './wallet'
+import { signTransaction, signAllTransactions } from './walletConnection'
 
 export type SafetySession = {
   user: PublicKey
@@ -41,38 +42,21 @@ export const getProgram = async (): Promise<Program> => {
 }
 
 export const getWalletProvider = async (): Promise<Wallet> => {
-  const { getWalletInfo } = await import('./wallet')
   const walletInfo = await getWalletInfo()
   
-  if (walletInfo?.type === 'phantom') {
-    console.warn(
-      'Phantom wallet detected. Transaction signing will use local wallet. ' +
-      'For full Phantom support, implement Wallet Adapter protocol.'
-    )
+  if (!walletInfo || !walletInfo.isConnected) {
+    throw new Error('No wallet connected. Please connect your wallet first.')
   }
   
-  const keypair = await getOrCreateWallet()
-  
-  if (!keypair.publicKey) {
-    throw new Error('Invalid wallet: missing public key')
-  }
+  const publicKey = new PublicKey(walletInfo.publicKey)
   
   return {
-    publicKey: keypair.publicKey,
-    payer: keypair,
+    publicKey,
     signTransaction: async <T extends Transaction | VersionedTransaction>(tx: T): Promise<T> => {
-      if (tx instanceof Transaction) {
-        tx.sign(keypair)
-      }
-      return tx
+      return await signTransaction(tx) as T
     },
     signAllTransactions: async <T extends Transaction | VersionedTransaction>(txs: T[]): Promise<T[]> => {
-      return txs.map(tx => {
-        if (tx instanceof Transaction) {
-          tx.sign(keypair)
-        }
-        return tx
-      })
+      return await signAllTransactions(txs) as T[]
     },
   } as Wallet
 }
@@ -247,4 +231,3 @@ export const cancelCheckIn = async (): Promise<string> => {
 
   return tx
 }
-

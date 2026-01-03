@@ -5,9 +5,9 @@ import { useAppStore } from '@/lib/store'
 import { clearWallet } from '@/lib/solana/wallet'
 import configs from '@/config'
 import { useRouter } from 'expo-router'
-import { Bell, Info, Lock, LogOut, Shield, Users } from 'lucide-react-native'
-import React from 'react'
-import { Alert, ScrollView, Text, View } from 'react-native'
+import { Bell, Clock, Info, Lock, LogOut, Phone, Shield, Users } from 'lucide-react-native'
+import React, { useState } from 'react'
+import { Alert, ScrollView, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
@@ -16,9 +16,15 @@ const SettingsScreen = () => {
   const trustedContacts = useAppStore((s) => s.trustedContacts)
   const notificationPreferences = useAppStore((s) => s.notificationPreferences)
   const privacySettings = useAppStore((s) => s.privacySettings)
+  const appSettings = useAppStore((s) => s.appSettings)
   const updateNotificationPreferences = useAppStore((s) => s.updateNotificationPreferences)
   const updatePrivacySettings = useAppStore((s) => s.updatePrivacySettings)
+  const updateAppSettings = useAppStore((s) => s.updateAppSettings)
   const resetStore = useAppStore((s) => s.resetStore)
+  const [showDurationInput, setShowDurationInput] = useState(false)
+  const [durationInput, setDurationInput] = useState(appSettings.checkInDurationMinutes.toString())
+  const [showPhoneInput, setShowPhoneInput] = useState(false)
+  const [phoneInput, setPhoneInput] = useState(appSettings.userPhoneNumber || '')
 
   return (
     <SafeAreaView className="flex-1 bg-brand-white" edges={['top']}>
@@ -29,6 +35,124 @@ const SettingsScreen = () => {
         />
 
         <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+          <SettingsSection title="Safety Settings">
+            <View className="rounded-2xl bg-white overflow-hidden">
+              <SettingsItem
+                icon={Clock}
+                title="Check-In Duration"
+                subtitle={`${appSettings.checkInDurationMinutes} minute${appSettings.checkInDurationMinutes !== 1 ? 's' : ''} ahead`}
+                onPress={() => {
+                  if (showDurationInput) {
+                    const minutes = parseInt(durationInput, 10)
+                    if (minutes >= 1 && minutes <= 60) {
+                      updateAppSettings({ checkInDurationMinutes: minutes })
+                      setShowDurationInput(false)
+                    } else {
+                      Alert.alert('Invalid Duration', 'Please enter a value between 1 and 60 minutes.')
+                    }
+                  } else {
+                    setShowDurationInput(true)
+                  }
+                }}
+                showArrow={!showDurationInput}
+              />
+              {showDurationInput && (
+                <View className="px-5 pb-4">
+                  <TextInput
+                    value={durationInput}
+                    onChangeText={setDurationInput}
+                    keyboardType="number-pad"
+                    placeholder="Minutes (1-60)"
+                    className="mt-3 px-4 py-3 rounded-xl bg-brand-light text-brand-black"
+                    autoFocus
+                  />
+                  <View className="flex-row gap-3 mt-3">
+                    <View className="flex-1">
+                      <SettingsItem
+                        title="Cancel"
+                        onPress={() => {
+                          setShowDurationInput(false)
+                          setDurationInput(appSettings.checkInDurationMinutes.toString())
+                        }}
+                      />
+                    </View>
+                    <View className="flex-1">
+                      <SettingsItem
+                        title="Save"
+                        onPress={() => {
+                          const minutes = parseInt(durationInput, 10)
+                          if (minutes >= 1 && minutes <= 60) {
+                            updateAppSettings({ checkInDurationMinutes: minutes })
+                            setShowDurationInput(false)
+                          } else {
+                            Alert.alert('Invalid Duration', 'Please enter a value between 1 and 60 minutes.')
+                          }
+                        }}
+                      />
+                    </View>
+                  </View>
+                </View>
+              )}
+              <View className="h-px bg-brand-light mx-5" />
+              <SettingsItem
+                icon={Phone}
+                title="Your Phone Number"
+                subtitle={appSettings.userPhoneNumber || "Add your phone as trusted contact"}
+                onPress={() => {
+                  if (showPhoneInput) {
+                    if (phoneInput.trim()) {
+                      updateAppSettings({ userPhoneNumber: phoneInput.trim() })
+                      setShowPhoneInput(false)
+                    } else {
+                      updateAppSettings({ userPhoneNumber: null })
+                      setShowPhoneInput(false)
+                    }
+                  } else {
+                    setShowPhoneInput(true)
+                  }
+                }}
+                showArrow={!showPhoneInput}
+              />
+              {showPhoneInput && (
+                <View className="px-5 pb-4">
+                  <TextInput
+                    value={phoneInput}
+                    onChangeText={setPhoneInput}
+                    keyboardType="phone-pad"
+                    placeholder="+1234567890"
+                    className="mt-3 px-4 py-3 rounded-xl bg-brand-light text-brand-black"
+                    autoFocus
+                  />
+                  <View className="flex-row gap-3 mt-3">
+                    <View className="flex-1">
+                      <SettingsItem
+                        title="Cancel"
+                        onPress={() => {
+                          setShowPhoneInput(false)
+                          setPhoneInput(appSettings.userPhoneNumber || '')
+                        }}
+                      />
+                    </View>
+                    <View className="flex-1">
+                      <SettingsItem
+                        title="Save"
+                        onPress={() => {
+                          if (phoneInput.trim()) {
+                            updateAppSettings({ userPhoneNumber: phoneInput.trim() })
+                            setShowPhoneInput(false)
+                          } else {
+                            updateAppSettings({ userPhoneNumber: null })
+                            setShowPhoneInput(false)
+                          }
+                        }}
+                      />
+                    </View>
+                  </View>
+                </View>
+              )}
+            </View>
+          </SettingsSection>
+
           <SettingsSection title="Contacts">
             <View className="rounded-2xl bg-white overflow-hidden">
               <SettingsItem

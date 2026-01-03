@@ -1,20 +1,17 @@
-import { Keypair, PublicKey } from '@solana/web3.js'
+import { PublicKey } from '@solana/web3.js'
 import * as SecureStore from 'expo-secure-store'
 
-const WALLET_STORAGE_KEY = 'aliveping_wallet_secret'
 const WALLET_TYPE_KEY = 'aliveping_wallet_type'
-const PHANTOM_PUBLIC_KEY_KEY = 'aliveping_phantom_public_key'
+const WALLET_PUBLIC_KEY_KEY = 'aliveping_wallet_public_key'
+const WALLET_AUTH_TOKEN_KEY = 'aliveping_wallet_auth_token'
 
-export type WalletType = 'local' | 'phantom'
+export type WalletType = 'mobile_wallet_adapter'
 
 export interface WalletInfo {
   publicKey: string
   type: WalletType
   isConnected: boolean
-}
-
-const validateSecretKey = (secretKey: Uint8Array): boolean => {
-  return secretKey.length === 64
+  authToken?: string
 }
 
 const validatePublicKey = (publicKey: string): boolean => {
@@ -26,95 +23,36 @@ const validatePublicKey = (publicKey: string): boolean => {
   }
 }
 
-export const getOrCreateWallet = async (): Promise<Keypair> => {
+export const getWalletPublicKey = async (): Promise<string | null> => {
   try {
-    const storedSecret = await SecureStore.getItemAsync(WALLET_STORAGE_KEY)
+    const publicKey = await SecureStore.getItemAsync(WALLET_PUBLIC_KEY_KEY)
     
-    if (storedSecret) {
-      try {
-        const parsedSecret = JSON.parse(storedSecret)
-        
-        if (!Array.isArray(parsedSecret)) {
-          throw new Error('Invalid secret key format')
-        }
-        
-        const secretKey = Uint8Array.from(parsedSecret)
-        
-        if (!validateSecretKey(secretKey)) {
-          throw new Error('Invalid secret key length')
-        }
-        
-        const keypair = Keypair.fromSecretKey(secretKey)
-        
-        if (!keypair.publicKey) {
-          throw new Error('Invalid keypair: missing public key')
-        }
-        
-        return keypair
-      } catch (parseError) {
-        console.error('Error parsing stored wallet:', parseError)
-        await SecureStore.deleteItemAsync(WALLET_STORAGE_KEY)
-        await SecureStore.deleteItemAsync(WALLET_TYPE_KEY)
-      }
-    }
-
-    const newKeypair = Keypair.generate()
-    
-    if (!newKeypair.publicKey) {
-      throw new Error('Failed to generate valid keypair')
+    if (publicKey && validatePublicKey(publicKey)) {
+      return publicKey
     }
     
-    const secretKeyArray = Array.from(newKeypair.secretKey)
-    
-    if (!validateSecretKey(newKeypair.secretKey)) {
-      throw new Error('Generated keypair has invalid secret key length')
-    }
-    
-    await SecureStore.setItemAsync(WALLET_STORAGE_KEY, JSON.stringify(secretKeyArray))
-    await SecureStore.setItemAsync(WALLET_TYPE_KEY, 'local')
-    
-    return newKeypair
-  } catch (error: any) {
-    console.error('Error managing wallet:', error)
-    
-    if (error.message) {
-      throw new Error(`Failed to get or create wallet: ${error.message}`)
-    }
-    throw new Error('Failed to get or create wallet. Please try again.')
-  }
-}
-
-export const getWalletPublicKey = async (): Promise<string> => {
-  try {
-    const walletType = await SecureStore.getItemAsync(WALLET_TYPE_KEY)
-    
-    if (walletType === 'phantom') {
-      const phantomPublicKey = await SecureStore.getItemAsync(PHANTOM_PUBLIC_KEY_KEY)
-      if (phantomPublicKey && validatePublicKey(phantomPublicKey)) {
-        return phantomPublicKey
-      }
-      console.warn('Invalid Phantom public key, falling back to local wallet')
-      await SecureStore.deleteItemAsync(WALLET_TYPE_KEY)
-      await SecureStore.deleteItemAsync(PHANTOM_PUBLIC_KEY_KEY)
-    }
-    
-    const keypair = await getOrCreateWallet()
-    return keypair.publicKey.toBase58()
+    return null
   } catch (error: any) {
     console.error('Error getting wallet public key:', error)
-    throw new Error(`Failed to get wallet address: ${error.message || 'Unknown error'}`)
+    return null
   }
 }
 
 export const getWalletInfo = async (): Promise<WalletInfo | null> => {
   try {
-    const walletType = (await SecureStore.getItemAsync(WALLET_TYPE_KEY)) as WalletType | null || 'local'
+    const walletType = (await SecureStore.getItemAsync(WALLET_TYPE_KEY)) as WalletType | null
     const publicKey = await getWalletPublicKey()
+    const authToken = await SecureStore.getItemAsync(WALLET_AUTH_TOKEN_KEY)
+    
+    if (!walletType || !publicKey) {
+      return null
+    }
     
     return {
       publicKey,
       type: walletType,
-      isConnected: !!publicKey,
+      isConnected: true,
+      authToken: authToken || undefined,
     }
   } catch (error) {
     console.error('Error getting wallet info:', error)
@@ -122,37 +60,41 @@ export const getWalletInfo = async (): Promise<WalletInfo | null> => {
   }
 }
 
-export const setPhantomWallet = async (publicKey: string): Promise<void> => {
+export const setWallet = async (publicKey: string, type: WalletType, authToken?: string): Promise<void> => {
   try {
     if (!validatePublicKey(publicKey)) {
-      throw new Error('Invalid Phantom public key')
+      throw new Error(`Invalid wallet public key`)
     }
     
-    await SecureStore.setItemAsync(PHANTOM_PUBLIC_KEY_KEY, publicKey)
-    await SecureStore.setItemAsync(WALLET_TYPE_KEY, 'phantom')
+    await SecureStore.setItemAsync(WALLET_PUBLIC_KEY_KEY, publicKey)
+    await SecureStore.setItemAsync(WALLET_TYPE_KEY, type)
+    
+    if (authToken) {
+      await SecureStore.setItemAsync(WALLET_AUTH_TOKEN_KEY, authToken)
+    }
   } catch (error: any) {
-    console.error('Error setting Phantom wallet:', error)
-    throw new Error(`Failed to set Phantom wallet: ${error.message || 'Unknown error'}`)
+    console.error(`Error setting wallet:`, error)
+    throw new Error(`Failed to set wallet: ${error.message || 'Unknown error'}`)
   }
 }
 
 export const clearWallet = async (): Promise<void> => {
   try {
     await Promise.all([
-      SecureStore.deleteItemAsync(WALLET_STORAGE_KEY),
       SecureStore.deleteItemAsync(WALLET_TYPE_KEY),
-      SecureStore.deleteItemAsync(PHANTOM_PUBLIC_KEY_KEY),
+      SecureStore.deleteItemAsync(WALLET_PUBLIC_KEY_KEY),
+      SecureStore.deleteItemAsync(WALLET_AUTH_TOKEN_KEY),
     ])
   } catch (error) {
     console.error('Error clearing wallet:', error)
     try {
-      await SecureStore.deleteItemAsync(WALLET_STORAGE_KEY)
-    } catch {}
-    try {
       await SecureStore.deleteItemAsync(WALLET_TYPE_KEY)
     } catch {}
     try {
-      await SecureStore.deleteItemAsync(PHANTOM_PUBLIC_KEY_KEY)
+      await SecureStore.deleteItemAsync(WALLET_PUBLIC_KEY_KEY)
+    } catch {}
+    try {
+      await SecureStore.deleteItemAsync(WALLET_AUTH_TOKEN_KEY)
     } catch {}
   }
 }
@@ -160,14 +102,9 @@ export const clearWallet = async (): Promise<void> => {
 export const hasWallet = async (): Promise<boolean> => {
   try {
     const walletType = await SecureStore.getItemAsync(WALLET_TYPE_KEY)
+    const publicKey = await getWalletPublicKey()
     
-    if (walletType === 'phantom') {
-      const phantomKey = await SecureStore.getItemAsync(PHANTOM_PUBLIC_KEY_KEY)
-      return !!phantomKey && validatePublicKey(phantomKey)
-    }
-    
-    const localKey = await SecureStore.getItemAsync(WALLET_STORAGE_KEY)
-    return !!localKey
+    return !!walletType && !!publicKey && validatePublicKey(publicKey)
   } catch {
     return false
   }
@@ -176,9 +113,16 @@ export const hasWallet = async (): Promise<boolean> => {
 export const validateWallet = async (): Promise<boolean> => {
   try {
     const publicKey = await getWalletPublicKey()
-    return validatePublicKey(publicKey)
+    return publicKey !== null && validatePublicKey(publicKey)
   } catch {
     return false
   }
 }
 
+export const getAuthToken = async (): Promise<string | null> => {
+  try {
+    return await SecureStore.getItemAsync(WALLET_AUTH_TOKEN_KEY)
+  } catch {
+    return null
+  }
+}
