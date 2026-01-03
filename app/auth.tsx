@@ -5,9 +5,10 @@ import { clearWallet, getWalletInfo, hasWallet, validateWallet } from '@/lib/sol
 import { connectWallet, disconnectWallet } from '@/lib/solana/walletConnection'
 import { useAppStore } from '@/lib/store'
 import { useRouter } from 'expo-router'
+import Constants from 'expo-constants'
 import { AlertCircle, ArrowLeft, CheckCircle2, RefreshCw, Wallet } from 'lucide-react-native'
 import React, { useCallback, useEffect, useState } from 'react'
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native'
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 const AuthScreen = () => {
@@ -77,6 +78,16 @@ const AuthScreen = () => {
       return
     }
 
+    const isExpoGo = Constants.executionEnvironment === 'storeClient'
+    if (isExpoGo) {
+      Alert.alert(
+        'Development Build Required',
+        'Wallet connection requires a secure context (HTTPS) and is not available in Expo Go.\n\nPlease create a development build to use wallet features:\nhttps://docs.expo.dev/develop/development-builds/introduction/',
+        [{ text: 'OK' }]
+      )
+      return
+    }
+
     setIsLoading(true)
     setError(null)
     
@@ -95,12 +106,22 @@ const AuthScreen = () => {
       router.replace('/flows' as any)
     } catch (error: any) {
       console.error('Error connecting wallet:', error)
-      setError(`Failed to connect: ${error.message || 'Unknown error'}`)
-      Alert.alert(
-        'Connection Error',
-        `Failed to connect wallet. ${error.message || 'Please try again.'}`,
-        [{ text: 'OK' }]
-      )
+      const errorMessage = error?.message || 'Unknown error'
+      setError(errorMessage)
+      
+      if (errorMessage.includes('secure context') || errorMessage.includes('HTTPS') || errorMessage.includes('Expo Go')) {
+        Alert.alert(
+          'Development Build Required',
+          'Wallet connection requires a secure context and is not available in Expo Go.\n\nPlease create a development build to use wallet features:\nhttps://docs.expo.dev/develop/development-builds/introduction/',
+          [{ text: 'OK' }]
+        )
+      } else {
+        Alert.alert(
+          'Connection Error',
+          `Failed to connect wallet. ${errorMessage}`,
+          [{ text: 'OK' }]
+        )
+      }
     } finally {
       setIsLoading(false)
     }

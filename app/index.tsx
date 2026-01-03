@@ -44,25 +44,25 @@ const RootScreen = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-brand-white" edges={['top', 'bottom']}>
-      <View className="flex-1 px-8">
-        <View className="flex-1 items-center justify-center">
-          <View className="items-center mb-8">
+      <View className="flex-1 px-8 justify-between">
+        <View className="flex-1 items-center justify-center -mt-12">
+          <View className="items-center mb-6">
             <AppIcon size="5xl" />
             
-            <Text className="text-brand-dark text-4xl font-bold mt-4 mb-4 text-center">
+            <Text className="text-brand-dark text-4xl font-bold mt-6 mb-3 text-center">
               {configs.appName}
             </Text>
+            
+            <Text className="text-brand-muted text-base text-center leading-6 px-4 max-w-md">
+              {configs.appDescription}
+            </Text>
           </View>
-
-          <Text className="text-brand-muted text-base text-center mb-8 leading-6 px-4 max-w-md">
-            {configs.appDescription}
-          </Text>
 
           <Button
             onPress={handleGetStarted}
             fullWidth
             size="md"
-            className="max-w-[340px] bg-brand-dark gap-0"
+            className="max-w-[340px] bg-brand-dark gap-0 mt-8"
           >
             <View className="mr-2">
               <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
@@ -71,18 +71,18 @@ const RootScreen = () => {
           </Button>
         </View>
 
-        <View className="items-center pb-8 pt-6">
-          <Text className="text-brand-muted text-xs text-center mb-4">
+        <View className="items-center pb-6">
+          <Text className="text-brand-muted text-xs text-center mb-3">
             {configs.appTagline}
           </Text>
           
           <View className="flex-row items-center">
             <Text className="text-brand-muted text-xs mr-1.5">Built on</Text>
-            <Pressable onPress={handleSolanaPress}>
+            <Pressable onPress={handleSolanaPress} hitSlop={8}>
               <SolanaLogo size={16} />
             </Pressable>
             <Text className="text-brand-muted text-xs ml-1.5 mr-1.5">by</Text>
-            <Pressable onPress={handleAuthorPress}>
+            <Pressable onPress={handleAuthorPress} hitSlop={8}>
               <Text className="text-brand-muted text-xs font-semibold">
                 {configs.appTeam}
               </Text>

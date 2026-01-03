@@ -72,12 +72,22 @@ const HomeScreen = () => {
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
     const locationService = await import('@/lib/location/locationService')
     const solanaProgram = await import('@/lib/solana/program')
+    const phoneOffFallback = await import('@/lib/services/phoneOffFallback')
     const location = await locationService.getCurrentLocation()
-    triggerPanicStore(location ? {
+    const locationData = location ? {
       latitude: location.latitude,
       longitude: location.longitude,
       accuracy: location.accuracy,
-    } : undefined)
+    } : undefined
+    
+    triggerPanicStore(locationData)
+    
+    phoneOffFallback.updateLastKnownState({
+      timestamp: Date.now(),
+      location: locationData,
+      checkInStatus: 'active',
+      eventType: 'panic',
+    })
     
     try {
       const locationHash = location ? await locationService.hashLocation(location) : new Array(32).fill(0)
@@ -127,7 +137,10 @@ const HomeScreen = () => {
               </View>
 
               {activeScheduled.length > 0 && (
-                <Card variant="light">
+                <Card
+                  variant="light"
+                  onPress={() => router.push('/flows/scheduled')}
+                >
                   <View className="flex-row items-center gap-3 mb-2">
                     <Clock size={18} color="#000000" />
                     <Text className="text-sm font-semibold text-brand-black">
