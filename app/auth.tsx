@@ -13,6 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 const AuthScreen = () => {
   const router = useRouter()
   const { wallet: walletState, setWallet, clearWallet: clearWalletStore } = useAppStore()
+  const [isConnecting, setIsConnecting] = useState(false)
+  const [isCreatingLocal, setIsCreatingLocal] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [walletAddress, setWalletAddress] = useState<string | null>(walletState.publicKey)
   const [isConnected, setIsConnected] = useState(walletState.isConnected)
@@ -89,7 +91,7 @@ const AuthScreen = () => {
   }, [setWallet, clearWalletStore])
 
   const handleCreateLocalWallet = async () => {
-    setIsLoading(true)
+    setIsCreatingLocal(true)
     setError(null)
     
     try {
@@ -116,7 +118,7 @@ const AuthScreen = () => {
         [{ text: 'OK' }]
       )
     } finally {
-      setIsLoading(false)
+      setIsCreatingLocal(false)
     }
   }
 
@@ -126,7 +128,7 @@ const AuthScreen = () => {
       return
     }
 
-    setIsLoading(true)
+    setIsConnecting(true)
     setError(null)
     
     try {
@@ -153,7 +155,7 @@ const AuthScreen = () => {
         setError(errorMessage)
       }
     } finally {
-      setIsLoading(false)
+      setIsConnecting(false)
     }
   }
 
@@ -265,25 +267,25 @@ const AuthScreen = () => {
               <View className="w-full gap-3">
                 <Button
                   onPress={handleConnect}
-                  disabled={isLoading}
-                  loading={isLoading}
+                  disabled={isConnecting || isCreatingLocal}
+                  loading={isConnecting}
                   fullWidth
                   size="md"
                   variant="primary"
                 >
-                  {!isLoading && <Wallet size={20} color="#FFFFFF" />}
-                  {isLoading ? 'Connecting...' : 'Connect Wallet'}
+                  {!isConnecting && <Wallet size={20} color="#FFFFFF" />}
+                  {isConnecting ? 'Connecting...' : 'Connect Wallet'}
                 </Button>
                 <Button
                   onPress={handleCreateLocalWallet}
-                  disabled={isLoading}
-                  loading={isLoading}
+                  disabled={isConnecting || isCreatingLocal}
+                  loading={isCreatingLocal}
                   fullWidth
                   size="md"
                   variant="outline"
                 >
-                  {!isLoading && <Key size={20} color="#000000" />}
-                  {isLoading ? 'Creating...' : 'Use Local Address'}
+                  {!isCreatingLocal && <Key size={20} color="#000000" />}
+                  {isCreatingLocal ? 'Creating...' : 'Use Local Address'}
                 </Button>
               </View>
             )}
@@ -292,7 +294,7 @@ const AuthScreen = () => {
               <>
                 <Button
                   onPress={() => router.replace('/flows' as any)}
-                  disabled={isLoading}
+                  disabled={isLoading || isConnecting || isCreatingLocal}
                   fullWidth
                   size="md"
                   className="mt-4"
@@ -301,7 +303,7 @@ const AuthScreen = () => {
                 </Button>
                 <Button
                   onPress={handleDisconnect}
-                  disabled={isLoading}
+                  disabled={isLoading || isConnecting || isCreatingLocal}
                   variant="secondary"
                   size="md"
                   fullWidth

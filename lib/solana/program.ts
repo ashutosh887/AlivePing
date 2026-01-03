@@ -28,16 +28,7 @@ export const getProgram = async (): Promise<Program | null> => {
       commitment: 'confirmed',
     })
     
-    const idlWithMetadata = {
-      ...IDL,
-      metadata: {
-        ...(IDL as any).metadata,
-        address: programId.toBase58(),
-      },
-    }
-    
-    const ProgramClass = Program as any
-    const program = new ProgramClass(idlWithMetadata, programId, provider) as Program
+    const program = new Program(IDL as any, provider)
     return program
   } catch (error: any) {
     console.error('Error creating program:', error)

@@ -1,16 +1,16 @@
 import { SettingsItem } from '@/components/settings/SettingsItem'
 import { SettingsSection } from '@/components/settings/SettingsSection'
-import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { Button } from '@/components/ui/Button'
-import { useAppStore } from '@/lib/store'
-import { clearWallet } from '@/lib/solana/wallet'
+import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import configs from '@/config'
+import { clearWallet } from '@/lib/solana/wallet'
+import { useAppStore } from '@/lib/store'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useRouter } from 'expo-router'
 import { Bell, Clock, Info, Lock, LogOut, Phone, Shield, Users } from 'lucide-react-native'
 import React, { useState } from 'react'
-import { Alert, ScrollView, Text, TextInput, View } from 'react-native'
+import { Alert, ScrollView, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const SettingsScreen = () => {
   const router = useRouter()

@@ -58,8 +58,8 @@ export type PrivacySettings = {
 };
 
 export type AppSettings = {
-  checkInDurationMinutes: number; // Pre-set check-in time (default 5 minutes)
-  userPhoneNumber: string | null; // User's own phone number (for self as trusted contact)
+  checkInDurationMinutes: number;
+  userPhoneNumber: string | null;
 };
 
 export type WalletState = {
@@ -124,7 +124,7 @@ export const useAppStore = create<Store>()(
         analyticsEnabled: false,
       },
       appSettings: {
-        checkInDurationMinutes: 5, // Default 5 minutes
+        checkInDurationMinutes: 5,
         userPhoneNumber: null,
       },
       wallet: {

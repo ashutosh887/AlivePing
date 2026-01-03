@@ -6,7 +6,7 @@ const clientId = process.env.EXPO_PUBLIC_WEB3AUTH_CLIENT_ID || ''
 
 const chainConfig = {
   chainNamespace: CHAIN_NAMESPACES.SOLANA,
-  chainId: '0x3', // Testnet chain ID
+  chainId: '0x3',
   rpcTarget: clusterApiUrl('testnet'),
   displayName: 'Solana Testnet',
   blockExplorerUrl: 'https://explorer.solana.com/?cluster=testnet',
