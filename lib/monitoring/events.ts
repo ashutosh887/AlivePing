@@ -35,8 +35,8 @@ const publishToConfluent = async (topic: string, event: SafetyEvent) => {
     const response = await fetch(url, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/vnd.kafka.json.v2+json',
-        'Accept': 'application/vnd.kafka.v2+json',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
         'Authorization': auth,
       },
       body: JSON.stringify({
