@@ -1,0 +1,32 @@
+import { Image } from 'expo-image'
+import React from 'react'
+import { View } from 'react-native'
+
+type AppIconProps = {
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl'
+}
+
+const sizeMap = {
+  sm: 64,
+  md: 96,
+  lg: 128,
+  xl: 160,
+  '2xl': 200,
+  '3xl': 240,
+}
+
+export const AppIcon = ({ size = 'lg' }: AppIconProps) => {
+  const iconSize = sizeMap[size]
+
+  return (
+    <View className="items-center justify-center">
+      <Image
+        source={require('../assets/images/icon.png')}
+        className="rounded-full"
+        contentFit="contain"
+        style={{ width: iconSize, height: iconSize }}
+      />
+    </View>
+  )
+}
+
