@@ -43,7 +43,21 @@ export const getProgram = async (): Promise<Program> => {
 }
 
 export const getWalletProvider = async (): Promise<Wallet> => {
+  const { getWalletInfo } = await import('./wallet')
+  const walletInfo = await getWalletInfo()
+  
+  if (walletInfo?.type === 'phantom') {
+    console.warn(
+      'Phantom wallet detected. Transaction signing will use local wallet. ' +
+      'For full Phantom support, implement Wallet Adapter protocol.'
+    )
+  }
+  
   const keypair = await getOrCreateWallet()
+  
+  if (!keypair.publicKey) {
+    throw new Error('Invalid wallet: missing public key')
+  }
   
   return {
     publicKey: keypair.publicKey,

@@ -2,6 +2,7 @@ import { SettingsItem } from '@/components/settings/SettingsItem'
 import { SettingsSection } from '@/components/settings/SettingsSection'
 import { useAppStore } from '@/lib/store'
 import { clearWallet } from '@/lib/solana/wallet'
+import configs from '@/config'
 import { useRouter } from 'expo-router'
 import { Bell, Info, Lock, LogOut, Shield, Users } from 'lucide-react-native'
 import React from 'react'
@@ -122,7 +123,7 @@ const SettingsScreen = () => {
             <View className="rounded-2xl bg-white overflow-hidden shadow-sm">
               <SettingsItem
                 icon={Info}
-                title="About AlivePing"
+                title={`About ${configs.appName}`}
                 subtitle="Version 1.0.0"
                 onPress={() => router.push('/flows/settings/about')}
                 showArrow

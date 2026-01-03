@@ -57,6 +57,13 @@ export type PrivacySettings = {
   analyticsEnabled: boolean;
 };
 
+export type WalletState = {
+  publicKey: string | null;
+  type: 'local' | 'phantom' | null;
+  isConnected: boolean;
+  lastConnected: number | null;
+};
+
 type Store = {
   events: Event[];
   checkIn: CheckInState | null;
@@ -64,6 +71,7 @@ type Store = {
   scheduledCheckIns: ScheduledCheckIn[];
   notificationPreferences: NotificationPreferences;
   privacySettings: PrivacySettings;
+  wallet: WalletState;
   startCheckIn: (location?: { latitude: number; longitude: number; accuracy: number | null }) => void;
   confirmCheckIn: () => void;
   cancelCheckIn: () => void;
@@ -80,6 +88,8 @@ type Store = {
   updateScheduledCheckIn: (id: string, updates: Partial<ScheduledCheckIn>) => void;
   updateNotificationPreferences: (prefs: Partial<NotificationPreferences>) => void;
   updatePrivacySettings: (settings: Partial<PrivacySettings>) => void;
+  setWallet: (wallet: Partial<WalletState>) => void;
+  clearWallet: () => void;
   resetStore: () => void;
 };
 
@@ -105,6 +115,12 @@ export const useAppStore = create<Store>()(
         shareLastSeen: true,
         dataRetentionDays: 30,
         analyticsEnabled: false,
+      },
+      wallet: {
+        publicKey: null,
+        type: null,
+        isConnected: false,
+        lastConnected: null,
       },
 
       startCheckIn: (location?: { latitude: number; longitude: number; accuracy: number | null }) => {
@@ -244,6 +260,25 @@ export const useAppStore = create<Store>()(
           },
         })),
 
+      setWallet: (wallet) =>
+        set((state) => ({
+          wallet: {
+            ...state.wallet,
+            ...wallet,
+            lastConnected: wallet.isConnected ? Date.now() : state.wallet.lastConnected,
+          },
+        })),
+
+      clearWallet: () =>
+        set({
+          wallet: {
+            publicKey: null,
+            type: null,
+            isConnected: false,
+            lastConnected: null,
+          },
+        }),
+
       triggerPanic: (location?: { latitude: number; longitude: number; accuracy: number | null }) => {
         const now = Date.now();
         set((state) => ({
@@ -301,6 +336,12 @@ export const useAppStore = create<Store>()(
             shareLastSeen: true,
             dataRetentionDays: 30,
             analyticsEnabled: false,
+          },
+          wallet: {
+            publicKey: null,
+            type: null,
+            isConnected: false,
+            lastConnected: null,
           },
         }),
     }),

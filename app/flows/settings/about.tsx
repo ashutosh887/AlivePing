@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router'
 import React from 'react'
 import { Image, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import configs from '@/config'
 
 const AboutScreen = () => {
   const router = useRouter()
@@ -18,7 +19,7 @@ const AboutScreen = () => {
             <ArrowLeft size={24} color="#000000" />
           </Pressable>
           <Text className="text-2xl font-bold text-brand-black">
-            About AlivePing
+            About {configs.appName}
           </Text>
         </View>
 
@@ -32,7 +33,7 @@ const AboutScreen = () => {
               />
             </View>
             <Text className="text-2xl font-bold text-brand-black mb-2">
-              AlivePing
+              {configs.appName}
             </Text>
             <Text className="text-sm text-brand-muted">
               Version 1.0.0
@@ -41,10 +42,10 @@ const AboutScreen = () => {
 
           <View className="mb-8">
             <Text className="text-lg font-semibold text-brand-black mb-4">
-              Your last-mile personal safety system
+              {configs.appDescription}
             </Text>
             <Text className="text-base text-brand-muted leading-6 mb-4">
-              AlivePing automatically alerts your trusted contacts if you fail to check in, 
+              {configs.appName} automatically alerts your trusted contacts if you fail to check in, 
               providing a safety net for when you need it most.
             </Text>
             <Text className="text-base text-brand-muted leading-6">
