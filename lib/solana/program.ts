@@ -28,7 +28,8 @@ export const getProgram = async (): Promise<Program | null> => {
       commitment: 'confirmed',
     })
     
-    const program = new Program(IDL as any, provider)
+    const ProgramClass = Program as any
+    const program = new ProgramClass(IDL, provider)
     return program
   } catch (error: any) {
     console.error('Error creating program:', error)
