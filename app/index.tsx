@@ -12,7 +12,7 @@ const RootScreen = () => {
   const router = useRouter()
   
   const handleGetStarted = () => {
-    router.replace('/flows/home')
+    router.replace('/auth')
   }
 
   const handleAuthorPress = async () => {
