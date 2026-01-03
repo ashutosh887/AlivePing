@@ -18,7 +18,7 @@ export type SafetySession = {
   contextHash: number[]
 }
 
-export const getProgram = async (): Promise<Program> => {
+export const getProgram = async (): Promise<Program | null> => {
   try {
     const connection = getConnection()
     const wallet = await getWalletProvider()
@@ -28,17 +28,20 @@ export const getProgram = async (): Promise<Program> => {
       commitment: 'confirmed',
     })
     
-    const program = new (Program as any)(IDL, programId, provider) as Program
+    const idlWithMetadata = {
+      ...IDL,
+      metadata: {
+        ...(IDL as any).metadata,
+        address: programId.toBase58(),
+      },
+    }
+    
+    const ProgramClass = Program as any
+    const program = new ProgramClass(idlWithMetadata, programId, provider) as Program
     return program
   } catch (error: any) {
     console.error('Error creating program:', error)
-    if (error.message?.includes('_bn')) {
-      throw new Error('Program initialization failed. Please ensure the contract is deployed and EXPO_PUBLIC_SOLANA_PROGRAM_ID is set correctly.')
-    }
-    if (error.message?.includes('EXPO_PUBLIC_SOLANA_PROGRAM_ID')) {
-      throw error
-    }
-    throw error
+    return null
   }
 }
 
@@ -100,8 +103,13 @@ export const getSessionPDA = async (userPublicKey: PublicKey): Promise<[PublicKe
 export const startCheckIn = async (
   deadline: number,
   contextHash: number[]
-): Promise<string> => {
+): Promise<string | null> => {
   const program = await getProgram()
+  if (!program) {
+    console.error('Program not initialized')
+    return null
+  }
+  
   const wallet = await getWalletProvider()
   const [sessionPDA] = await getSessionPDA(wallet.publicKey)
 
@@ -114,53 +122,77 @@ export const startCheckIn = async (
 
   const deadlineBN = new BN(deadline.toString())
 
-  const tx = await program.methods
-    .startCheckIn(deadlineBN, Array.from(hashBuffer))
-    .accounts({
-      user: wallet.publicKey,
-      session: sessionPDA,
-      systemProgram: SystemProgram.programId,
-    })
-    .rpc()
+  try {
+    const tx = await program.methods
+      .startCheckIn(deadlineBN, Array.from(hashBuffer))
+      .accounts({
+        user: wallet.publicKey,
+        session: sessionPDA,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc()
 
-  return tx
+    return tx
+  } catch (error) {
+    console.error('Start check-in transaction error:', error)
+    return null
+  }
 }
 
-export const confirmSafe = async (): Promise<string> => {
+export const confirmSafe = async (): Promise<string | null> => {
   const program = await getProgram()
+  if (!program) {
+    console.error('Program not initialized')
+    return null
+  }
+  
   const wallet = await getWalletProvider()
   const [sessionPDA] = await getSessionPDA(wallet.publicKey)
 
-  const tx = await program.methods
-    .confirmSafe()
-    .accounts({
-      user: wallet.publicKey,
-      session: sessionPDA,
-    })
-    .rpc()
+  try {
+    const tx = await program.methods
+      .confirmSafe()
+      .accounts({
+        user: wallet.publicKey,
+        session: sessionPDA,
+      })
+      .rpc()
 
-  return tx
+    return tx
+  } catch (error) {
+    console.error('Confirm safe transaction error:', error)
+    return null
+  }
 }
 
-export const expireCheckIn = async (): Promise<string> => {
+export const expireCheckIn = async (): Promise<string | null> => {
   const program = await getProgram()
+  if (!program) return null
+  
   const wallet = await getWalletProvider()
   const [sessionPDA] = await getSessionPDA(wallet.publicKey)
 
-  const tx = await program.methods
-    .expireCheckIn()
-    .accounts({
-      user: wallet.publicKey,
-      session: sessionPDA,
-    })
-    .rpc()
+  try {
+    const tx = await program.methods
+      .expireCheckIn()
+      .accounts({
+        user: wallet.publicKey,
+        session: sessionPDA,
+      })
+      .rpc()
 
-  return tx
+    return tx
+  } catch (error) {
+    console.error('Expire check-in transaction error:', error)
+    return null
+  }
 }
 
 export const getSession = async (): Promise<SafetySession | null> => {
   try {
     const program = await getProgram()
+    if (!program) return null
+    
     const wallet = await getWalletProvider()
     const [sessionPDA] = await getSessionPDA(wallet.publicKey)
 
@@ -187,26 +219,35 @@ export const getSession = async (): Promise<SafetySession | null> => {
   }
 }
 
-export const updateLastPing = async (): Promise<string> => {
+export const updateLastPing = async (): Promise<string | null> => {
   const program = await getProgram()
+  if (!program) return null
+  
   const wallet = await getWalletProvider()
   const [sessionPDA] = await getSessionPDA(wallet.publicKey)
 
-  const tx = await program.methods
-    .updateLastPing()
-    .accounts({
-      user: wallet.publicKey,
-      session: sessionPDA,
-    })
-    .rpc()
+  try {
+    const tx = await program.methods
+      .updateLastPing()
+      .accounts({
+        user: wallet.publicKey,
+        session: sessionPDA,
+      })
+      .rpc()
 
-  return tx
+    return tx
+  } catch (error) {
+    console.error('Update last ping transaction error:', error)
+    return null
+  }
 }
 
 export const triggerPanic = async (
   contextHash: number[]
-): Promise<string> => {
+): Promise<string | null> => {
   const program = await getProgram()
+  if (!program) return null
+  
   const wallet = await getWalletProvider()
   const [sessionPDA] = await getSessionPDA(wallet.publicKey)
 
@@ -217,46 +258,65 @@ export const triggerPanic = async (
 
   const hashBuffer = Buffer.from(contextHashArray)
 
-  const tx = await program.methods
-    .triggerPanic(Array.from(hashBuffer))
-    .accounts({
-      user: wallet.publicKey,
-      session: sessionPDA,
-      systemProgram: SystemProgram.programId,
-    })
-    .rpc()
+  try {
+    const tx = await program.methods
+      .triggerPanic(Array.from(hashBuffer))
+      .accounts({
+        user: wallet.publicKey,
+        session: sessionPDA,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc()
 
-  return tx
+    return tx
+  } catch (error) {
+    console.error('Trigger panic transaction error:', error)
+    return null
+  }
 }
 
-export const closeSession = async (): Promise<string> => {
+export const closeSession = async (): Promise<string | null> => {
   const program = await getProgram()
+  if (!program) return null
+  
   const wallet = await getWalletProvider()
   const [sessionPDA] = await getSessionPDA(wallet.publicKey)
 
-  const tx = await program.methods
-    .closeSession()
-    .accounts({
-      user: wallet.publicKey,
-      session: sessionPDA,
-    })
-    .rpc()
+  try {
+    const tx = await program.methods
+      .closeSession()
+      .accounts({
+        user: wallet.publicKey,
+        session: sessionPDA,
+      })
+      .rpc()
 
-  return tx
+    return tx
+  } catch (error) {
+    console.error('Close session transaction error:', error)
+    return null
+  }
 }
 
-export const cancelCheckIn = async (): Promise<string> => {
+export const cancelCheckIn = async (): Promise<string | null> => {
   const program = await getProgram()
+  if (!program) return null
+  
   const wallet = await getWalletProvider()
   const [sessionPDA] = await getSessionPDA(wallet.publicKey)
 
-  const tx = await program.methods
-    .cancelCheckIn()
-    .accounts({
-      user: wallet.publicKey,
-      session: sessionPDA,
-    })
-    .rpc()
+  try {
+    const tx = await program.methods
+      .cancelCheckIn()
+      .accounts({
+        user: wallet.publicKey,
+        session: sessionPDA,
+      })
+      .rpc()
 
-  return tx
+    return tx
+  } catch (error) {
+    console.error('Cancel check-in transaction error:', error)
+    return null
+  }
 }

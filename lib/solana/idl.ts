@@ -1,6 +1,9 @@
 export const IDL = {
   "version": "0.1.0",
   "name": "aliveping",
+  "metadata": {
+    "address": "9ykG65VCa5KsbKkc1HdgbZRDr61fYjHYnDGy17LafX1e"
+  },
   "instructions": [
     {
       "name": "startCheckIn",

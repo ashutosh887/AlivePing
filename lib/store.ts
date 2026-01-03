@@ -64,7 +64,7 @@ export type AppSettings = {
 
 export type WalletState = {
   publicKey: string | null;
-  type: 'mobile_wallet_adapter' | null;
+  type: 'mobile_wallet_adapter' | 'local_keypair' | null;
   isConnected: boolean;
   lastConnected: number | null;
 };
