@@ -1,10 +1,12 @@
-import { useAppStore } from '@/lib/store'
-import { getCurrentLocation, hashLocation } from '@/lib/location/locationService'
-import { startCheckIn as solanaStartCheckIn, confirmSafe as solanaConfirmSafe } from '@/lib/solana/program'
-import { logEvent } from '@/lib/monitoring/datadog'
 import { DATADOG_EVENTS } from '@/lib/constants/datadog'
+import { getCurrentLocation, getLastKnownLocation, hashLocation } from '@/lib/location/locationService'
+import { logEvent } from '@/lib/monitoring/datadog'
 import { publishSafetyEvent } from '@/lib/monitoring/events'
+import { updateLastKnownState } from '@/lib/services/phoneOffFallback'
+import { generateAlertMessage, sendSMS } from '@/lib/services/sms'
+import { confirmSafe as solanaConfirmSafe, startCheckIn as solanaStartCheckIn } from '@/lib/solana/program'
 import { getWalletPublicKey } from '@/lib/solana/wallet'
+import { useAppStore } from '@/lib/store'
 import { useEffect, useState } from 'react'
 
 export const useCheckIn = () => {
@@ -14,6 +16,9 @@ export const useCheckIn = () => {
   const cancelCheckIn = useAppStore((s) => s.cancelCheckIn)
   const triggerAlert = useAppStore((s) => s.triggerAlert)
   const cancelAlert = useAppStore((s) => s.cancelAlert)
+  const trustedContacts = useAppStore((s) => s.trustedContacts)
+  const notificationPreferences = useAppStore((s) => s.notificationPreferences)
+  const appSettings = useAppStore((s) => s.appSettings)
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
 
@@ -25,7 +30,8 @@ export const useCheckIn = () => {
       const location = await getCurrentLocation()
       const locationHash = location ? await hashLocation(location) : new Array(32).fill(0)
       
-      const deadline = Math.floor((Date.now() + 5 * 60 * 1000) / 1000)
+      const durationMs = (appSettings.checkInDurationMinutes || 5) * 60 * 1000
+      const deadline = Math.floor((Date.now() + durationMs) / 1000)
       
       try {
         await solanaStartCheckIn(deadline, locationHash)
@@ -33,21 +39,32 @@ export const useCheckIn = () => {
         console.error('Solana start check-in error:', error)
       }
 
-      storeStartCheckIn(location ? {
+      const locationData = location ? {
         latitude: location.latitude,
         longitude: location.longitude,
         accuracy: location.accuracy,
-      } : undefined)
+      } : undefined
+
+      storeStartCheckIn(locationData)
+
+      updateLastKnownState({
+        timestamp: Date.now(),
+        location: locationData,
+        checkInStatus: 'active',
+        eventType: 'check_in',
+      })
 
       const userId = await getWalletPublicKey()
-      await logEvent({
-        event: DATADOG_EVENTS.CHECK_IN_START,
-        payload: {
-          userId,
-          locationAvailable: !!location,
-        },
-      })
-      await publishSafetyEvent('check_in_started', userId, { location: location ? 'available' : 'unavailable' })
+      if (userId) {
+        await logEvent({
+          event: DATADOG_EVENTS.CHECK_IN_START,
+          payload: {
+            userId,
+            locationAvailable: !!location,
+          },
+        })
+        await publishSafetyEvent('check_in_started', userId, { location: location ? 'available' : 'unavailable' })
+      }
     } catch (error) {
       console.error('Start check-in error:', error)
     } finally {
@@ -68,14 +85,23 @@ export const useCheckIn = () => {
 
       storeConfirmCheckIn()
 
-      const userId = await getWalletPublicKey()
-      await logEvent({
-        event: DATADOG_EVENTS.CHECK_IN_CONFIRMED,
-        payload: {
-          userId,
-        },
+      updateLastKnownState({
+        timestamp: Date.now(),
+        location: useAppStore.getState().events.find(e => e.type === "CHECK_IN" && e.status === "confirmed")?.location,
+        checkInStatus: 'confirmed',
+        eventType: 'check_in',
       })
-      await publishSafetyEvent('check_in_confirmed', userId)
+
+      const userId = await getWalletPublicKey()
+      if (userId) {
+        await logEvent({
+          event: DATADOG_EVENTS.CHECK_IN_CONFIRMED,
+          payload: {
+            userId,
+          },
+        })
+        await publishSafetyEvent('check_in_confirmed', userId)
+      }
     } catch (error) {
       console.error('Confirm check-in error:', error)
     } finally {
@@ -102,13 +128,32 @@ export const useCheckIn = () => {
       if (remaining <= 0) {
         try {
           const location = await getCurrentLocation()
-          triggerAlert(location ? {
+          const locationData = location ? {
             latitude: location.latitude,
             longitude: location.longitude,
             accuracy: location.accuracy,
-          } : undefined)
+          } : undefined
+          triggerAlert(locationData)
+          updateLastKnownState({
+            timestamp: Date.now(),
+            location: locationData,
+            checkInStatus: 'expired',
+            eventType: 'check_in',
+          })
         } catch {
-          triggerAlert()
+          const lastLocation = await getLastKnownLocation()
+          const locationData = lastLocation ? {
+            latitude: lastLocation.latitude,
+            longitude: lastLocation.longitude,
+            accuracy: lastLocation.accuracy,
+          } : undefined
+          triggerAlert(locationData)
+          updateLastKnownState({
+            timestamp: Date.now(),
+            location: locationData,
+            checkInStatus: 'expired',
+            eventType: 'check_in',
+          })
         }
         setTimeRemaining(0)
       } else {
@@ -127,17 +172,54 @@ export const useCheckIn = () => {
 
   useEffect(() => {
     if (isAlertActive) {
-      getWalletPublicKey().then((userId) => {
-        logEvent({
-          event: DATADOG_EVENTS.ALERT_TRIGGERED,
-          payload: {
-            userId,
-          },
-        })
-        publishSafetyEvent('alert_triggered', userId)
-      })
+      const sendAlertNotifications = async () => {
+        const userId = await getWalletPublicKey()
+        
+        if (userId) {
+          await logEvent({
+            event: DATADOG_EVENTS.ALERT_TRIGGERED,
+            payload: {
+              userId,
+            },
+          })
+          await publishSafetyEvent('alert_triggered', userId)
+        }
+
+        if (notificationPreferences.smsEnabled && trustedContacts.length > 0) {
+          const activeEvent = useAppStore.getState().events.find(
+            e => e.type === "CHECK_IN" && e.status === "triggered"
+          )
+          
+          const location = activeEvent?.location
+          const alertMessage = generateAlertMessage('check_in_missed', location)
+
+          const contactsToNotify = [...trustedContacts]
+          if (appSettings.userPhoneNumber) {
+            contactsToNotify.push({
+              id: 'self',
+              name: 'Self',
+              phone: appSettings.userPhoneNumber,
+              isPrimary: false,
+            })
+          }
+
+          const smsPromises = contactsToNotify.map(contact =>
+            sendSMS({
+              to: contact.phone,
+              message: alertMessage,
+            }).catch(error => {
+              console.error(`Failed to send SMS to ${contact.name}:`, error)
+              return false
+            })
+          )
+
+          await Promise.allSettled(smsPromises)
+        }
+      }
+
+      sendAlertNotifications()
     }
-  }, [isAlertActive])
+  }, [isAlertActive, trustedContacts, notificationPreferences.smsEnabled, appSettings.userPhoneNumber])
 
   return {
     checkIn,

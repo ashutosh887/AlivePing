@@ -26,13 +26,6 @@ const BACKUP_RPC_ENDPOINTS = {
 let currentRpcIndex = 0
 
 export const getConnection = (network: 'testnet' | 'devnet' | 'mainnet' = 'testnet'): Connection => {
-  const customRpc = process.env.EXPO_PUBLIC_SOLANA_RPC_URL
-  if (customRpc) {
-    return new Connection(customRpc, {
-      commitment: 'confirmed' as Commitment,
-    })
-  }
-
   const endpoints = BACKUP_RPC_ENDPOINTS[network] || [RPC_ENDPOINTS[network]]
   const endpoint = endpoints[currentRpcIndex % endpoints.length]
   

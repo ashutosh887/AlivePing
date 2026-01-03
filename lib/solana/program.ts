@@ -5,7 +5,7 @@ import 'react-native-get-random-values'
 import { getConnection, getProgramId } from './connection'
 import { IDL } from './idl'
 import { getWalletInfo } from './wallet'
-import { signTransaction, signAllTransactions } from './walletConnection'
+import { signAllTransactions, signTransaction } from './walletConnection'
 
 export type SafetySession = {
   user: PublicKey

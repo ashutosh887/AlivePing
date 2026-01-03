@@ -1,6 +1,6 @@
 import HapticTabButton from "@/components/HapticTabButton";
 import { Tabs } from "expo-router";
-import { Clock, Home, Settings, Users } from "lucide-react-native";
+import { Calendar, Clock, Home, Settings, Users } from "lucide-react-native";
 import { Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -49,6 +49,16 @@ export default function FlowsLayout() {
           title: "Contacts",
           tabBarIcon: ({ color, focused }) => (
             <Users size={ICON_SIZE} color={color} strokeWidth={focused ? 2.5 : 2} />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="scheduled"
+        options={{
+          title: "Scheduled",
+          tabBarIcon: ({ color, focused }) => (
+            <Calendar size={ICON_SIZE} color={color} strokeWidth={focused ? 2.5 : 2} />
           ),
         }}
       />
