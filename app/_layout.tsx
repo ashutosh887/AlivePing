@@ -8,10 +8,7 @@ export default function RootLayout() {
     <ThemeProvider value={DefaultTheme}>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
-        <Stack.Screen name="home" />
-        <Stack.Screen name="contacts" />
-        <Stack.Screen name="history" />
-        <Stack.Screen name="settings" />
+        <Stack.Screen name="flows" />
       </Stack>
       <StatusBar style="dark" />
     </ThemeProvider>

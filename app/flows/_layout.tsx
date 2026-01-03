@@ -34,10 +34,9 @@ export default function FlowsLayout() {
       }}
     >
       <Tabs.Screen
-        name="home/index"
+        name="home"
         options={{
           title: "Home",
-          tabBarLabel: "Home",
           tabBarIcon: ({ color, focused }) => (
             <Home size={ICON_SIZE} color={color} strokeWidth={focused ? 2.5 : 2} />
           ),
@@ -45,10 +44,9 @@ export default function FlowsLayout() {
       />
 
       <Tabs.Screen
-        name="contacts/index"
+        name="contacts"
         options={{
           title: "Contacts",
-          tabBarLabel: "Contacts",
           tabBarIcon: ({ color, focused }) => (
             <Users size={ICON_SIZE} color={color} strokeWidth={focused ? 2.5 : 2} />
           ),
@@ -56,10 +54,9 @@ export default function FlowsLayout() {
       />
 
       <Tabs.Screen
-        name="history/index"
+        name="history"
         options={{
           title: "History",
-          tabBarLabel: "History",
           tabBarIcon: ({ color, focused }) => (
             <Clock size={ICON_SIZE} color={color} strokeWidth={focused ? 2.5 : 2} />
           ),
@@ -67,10 +64,9 @@ export default function FlowsLayout() {
       />
 
       <Tabs.Screen
-        name="settings/index"
+        name="settings"
         options={{
           title: "Settings",
-          tabBarLabel: "Settings",
           tabBarIcon: ({ color, focused }) => (
             <Settings size={ICON_SIZE} color={color} strokeWidth={focused ? 2.5 : 2} />
           ),
