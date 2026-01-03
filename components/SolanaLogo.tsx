@@ -9,8 +9,8 @@ type SolanaLogoProps = {
 
 export const SolanaLogo = ({ size = 20, color = '#14F195' }: SolanaLogoProps) => {
   return (
-    <View style={{ width: size, height: size }}>
-      <Svg width={size} height={size} viewBox="0 0 397.7 311.7">
+    <View style={{ width: size * 1.3, height: size }} className="items-center justify-center">
+      <Svg width={size * 1.3} height={size} viewBox="0 0 397.7 311.7" preserveAspectRatio="xMidYMid meet">
         <Path
           d="M64.6 237.9c2.4-2.4 5.7-3.8 9.2-3.8h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1l62.7-62.7z"
           fill={color}

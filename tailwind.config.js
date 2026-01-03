@@ -30,7 +30,6 @@ const config = {
   plugins: [],
 };
 
-// Only add preset if it was successfully loaded
 if (presetLoaded && nativewindPreset) {
   config.presets = [nativewindPreset];
 }
