@@ -1,0 +1,25 @@
+[package]
+name = "aliveping"
+version = "0.1.0"
+description = "AlivePing - Personal safety check-in system with immutable proof"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "aliveping"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+[profile.release]
+opt-level = "z"  # Optimize for size
+lto = true       # Link-time optimization
+codegen-units = 1
+strip = true
+
+[dependencies]
+anchor-lang = "0.32.1"
