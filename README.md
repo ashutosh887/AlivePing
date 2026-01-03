@@ -84,8 +84,10 @@ EXPO_PUBLIC_CONFLUENT_TOPIC=AlivePing
 # Google Gemini AI
 EXPO_PUBLIC_GEMINI_API_KEY=your_gemini_key
 
-# Web3Auth (Optional)
-EXPO_PUBLIC_WEB3AUTH_CLIENT_ID=your_web3auth_client_id
+# Twilio SMS (Required for SMS alerts)
+EXPO_PUBLIC_TWILIO_ACCOUNT_SID=your_twilio_account_sid
+EXPO_PUBLIC_TWILIO_AUTH_TOKEN=your_twilio_auth_token
+EXPO_PUBLIC_TWILIO_FROM_NUMBER=+1234567890
 ```
 
 ### Run
