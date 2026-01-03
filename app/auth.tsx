@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/Button'
 import configs from '@/config'
 import { checkConnectionHealth } from '@/lib/solana/connectionHealth'
 import { connectPhantom, connectPhantomManually, isPhantomInstalled } from '@/lib/solana/phantom'
@@ -5,9 +6,9 @@ import { clearWallet, getWalletInfo, getWalletPublicKey, hasWallet, validateWall
 import { useAppStore } from '@/lib/store'
 import * as Linking from 'expo-linking'
 import { useRouter } from 'expo-router'
-import { AlertCircle, CheckCircle2, RefreshCw, Wallet } from 'lucide-react-native'
+import { AlertCircle, ArrowLeft, CheckCircle2, RefreshCw, Wallet } from 'lucide-react-native'
 import React, { useCallback, useEffect, useState } from 'react'
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 const MAX_RETRY_ATTEMPTS = 3
@@ -326,10 +327,20 @@ const AuthScreen = () => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
       >
-        <View className="flex-1 px-6 items-center justify-center">
-          <View className="w-32 h-32 rounded-full bg-brand-accent items-center justify-center mb-8 shadow-lg">
-            <Wallet size={64} color="#000000" strokeWidth={2.5} />
+        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+          <View className="px-6 pt-8 pb-6">
+            <Pressable
+              onPress={() => router.push('/')}
+              className="mb-6 self-start p-2 rounded-xl active:opacity-70"
+            >
+              <ArrowLeft size={24} color="#000000" />
+            </Pressable>
           </View>
+          
+          <View className="flex-1 px-6 items-center justify-center pb-6">
+            <View className="w-32 h-32 rounded-full bg-brand-accent items-center justify-center mb-8">
+              <Wallet size={64} color="#000000" strokeWidth={2.5} />
+            </View>
 
           <Text className="text-3xl font-bold text-brand-black mb-3 text-center">
             Connect Wallet
@@ -413,28 +424,27 @@ const AuthScreen = () => {
                 editable={!isLoading}
               />
               <View className="flex-row gap-3">
-                <Pressable
+                <Button
                   onPress={handleManualPhantomConnect}
                   disabled={isLoading || !manualPhantomKey.trim()}
-                  className="flex-1 py-3 rounded-xl bg-brand-black active:opacity-90 disabled:opacity-50"
+                  fullWidth
+                  size="md"
                 >
-                  <Text className="text-brand-white text-center font-semibold">
-                    Connect
-                  </Text>
-                </Pressable>
-                <Pressable
+                  Connect
+                </Button>
+                <Button
                   onPress={() => {
                     setShowManualPhantomInput(false)
                     setManualPhantomKey('')
                     setError(null)
                   }}
                   disabled={isLoading}
-                  className="flex-1 py-3 rounded-xl bg-brand-muted/20 active:opacity-80"
+                  variant="secondary"
+                  fullWidth
+                  size="md"
                 >
-                  <Text className="text-brand-black text-center font-semibold">
-                    Cancel
-                  </Text>
-                </Pressable>
+                  Cancel
+                </Button>
               </View>
             </View>
           )}
@@ -442,69 +452,54 @@ const AuthScreen = () => {
           {!showManualPhantomInput && (
             <>
               {isPhantomAvailable && !walletAddress && (
-                <Pressable
+                <Button
                   onPress={() => handleConnect(true)}
                   disabled={isLoading}
-                  className="w-full py-4 rounded-2xl bg-purple-600 active:opacity-90 disabled:opacity-50 shadow-lg flex-row items-center justify-center gap-3 mb-3"
+                  loading={isLoading}
+                  fullWidth
+                  size="md"
+                  variant="phantom"
+                  className="mb-3"
                 >
-                  {isLoading ? (
-                    <>
-                      <ActivityIndicator color="#FFFFFF" />
-                      <Text className="text-white text-lg font-semibold">
-                        Connecting to Phantom...
-                      </Text>
-                    </>
-                  ) : (
-                    <>
-                      <Wallet size={22} color="#FFFFFF" />
-                      <Text className="text-white text-lg font-semibold">
-                        Connect with Phantom
-                      </Text>
-                    </>
-                  )}
-                </Pressable>
+                  {!isLoading && <Wallet size={20} color="#FFFFFF" />}
+                  {isLoading ? 'Connecting to Phantom...' : 'Connect with Phantom'}
+                </Button>
               )}
 
-              <Pressable
+              <Button
                 onPress={() => handleConnect(false)}
                 disabled={isLoading}
-                className="w-full py-5 rounded-2xl bg-brand-black active:opacity-90 disabled:opacity-50 shadow-lg flex-row items-center justify-center gap-3"
+                loading={isLoading}
+                fullWidth
+                size="md"
               >
-                {isLoading ? (
-                  <>
-                    <ActivityIndicator color="#FFFFFF" />
-                    <Text className="text-brand-white text-xl font-semibold">
-                      {isGenerating ? 'Generating...' : isConnected ? 'Connecting...' : 'Connecting...'}
-                    </Text>
-                  </>
-                ) : (
-                  <>
-                    <Wallet size={24} color="#FFFFFF" />
-                    <Text className="text-brand-white text-xl font-semibold">
-                      {isConnected ? 'Continue to App' : walletAddress ? 'Connect Wallet' : 'Create Local Wallet'}
-                    </Text>
-                  </>
-                )}
-              </Pressable>
+                {!isLoading && <Wallet size={20} color="#FFFFFF" />}
+                {isLoading 
+                  ? (isGenerating ? 'Generating...' : 'Connecting...')
+                  : (isConnected ? 'Continue to App' : walletAddress ? 'Connect Wallet' : 'Create Local Wallet')
+                }
+              </Button>
             </>
           )}
 
           {walletAddress && !isGenerating && !showManualPhantomInput && (
-            <Pressable
+            <Button
               onPress={handleLogout}
               disabled={isLoading}
-              className="mt-4 py-3 px-6 rounded-xl active:opacity-80 disabled:opacity-50"
+              variant="secondary"
+              size="md"
+              fullWidth
+              className="mt-4"
             >
-              <Text className="text-sm font-semibold text-brand-muted text-center">
-                Use Different Wallet
-              </Text>
-            </Pressable>
+              Use Different Wallet
+            </Button>
           )}
 
           <Text className="mt-6 text-xs text-brand-muted text-center px-8 leading-4">
             By connecting, you agree to our terms of service. Your private key never leaves your device.
           </Text>
         </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   )

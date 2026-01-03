@@ -1,5 +1,6 @@
 import { AppIcon } from '@/components/AppIcon'
 import { SolanaLogo } from '@/components/SolanaLogo'
+import { Button } from '@/components/ui/Button'
 import configs from '@/config'
 import { Ionicons } from '@expo/vector-icons'
 import * as Linking from 'expo-linking'
@@ -45,52 +46,42 @@ const RootScreen = () => {
     <SafeAreaView className="flex-1 bg-brand-white" edges={['top', 'bottom']}>
       <View className="flex-1 px-8">
         <View className="flex-1 items-center justify-center">
-          <View className="items-center mb-4">
+          <View className="items-center mb-8">
             <AppIcon size="5xl" />
             
-            <Text className="text-brand-black text-5xl font-bold mt-2 mb-1 text-center">
+            <Text className="text-brand-dark text-4xl font-bold mt-4 mb-4 text-center">
               {configs.appName}
-            </Text>
-            
-            <Text className="text-brand-muted text-base text-center font-medium mb-4">
-              {configs.appTagline}
             </Text>
           </View>
 
-          <Text className="text-brand-dark text-xl text-center mb-5 leading-8 px-2 max-w-md">
+          <Text className="text-brand-muted text-base text-center mb-8 leading-6 px-4 max-w-md">
             {configs.appDescription}
           </Text>
 
-          <Pressable
-            className="w-full max-w-[340px] bg-brand-black py-5 rounded-2xl items-center justify-center flex-row gap-3 mb-6"
+          <Button
             onPress={handleGetStarted}
-            style={{
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
-              shadowRadius: 8,
-              elevation: 8,
-            }}
+            fullWidth
+            size="md"
+            className="max-w-[340px] bg-brand-dark gap-0"
           >
-            <Text className="text-brand-white text-xl font-bold">
-              Get Started
-            </Text>
-            <Ionicons name="arrow-forward" size={22} color="#FFFFFF" />
-          </Pressable>
+            <View className="mr-2">
+              <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+            </View>
+            Get Started
+          </Button>
         </View>
 
-        <View className="items-center gap-2 pb-6 pt-4">
-          <View className="flex-row items-center gap-2">
-            <Text className="text-brand-muted text-xs">Powered by</Text>
-            <Pressable onPress={handleSolanaPress} className="flex-row items-center">
+        <View className="items-center pb-8 pt-6">
+          <Text className="text-brand-muted text-xs text-center mb-4">
+            {configs.appTagline}
+          </Text>
+          
+          <View className="flex-row items-center">
+            <Text className="text-brand-muted text-xs mr-1.5">Built on</Text>
+            <Pressable onPress={handleSolanaPress}>
               <SolanaLogo size={16} />
             </Pressable>
-          </View>
-
-          <View className="flex-row items-center gap-1.5">
-            <Text className="text-brand-muted text-xs">Made with</Text>
-            <Ionicons name="heart" size={12} color="#9CA3AF" />
-            <Text className="text-brand-muted text-xs">by</Text>
+            <Text className="text-brand-muted text-xs ml-1.5 mr-1.5">by</Text>
             <Pressable onPress={handleAuthorPress}>
               <Text className="text-brand-muted text-xs font-semibold">
                 {configs.appTeam}
