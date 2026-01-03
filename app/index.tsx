@@ -3,13 +3,16 @@ import { SolanaLogo } from '@/components/SolanaLogo'
 import configs from '@/config'
 import { Ionicons } from '@expo/vector-icons'
 import * as Linking from 'expo-linking'
+import { useRouter } from 'expo-router'
 import React from 'react'
 import { Alert, Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 const RootScreen = () => {
+  const router = useRouter()
+  
   const handleGetStarted = () => {
-    Alert.alert('Get Started', 'Welcome to AlivePing!')
+    router.replace('/flows/home')
   }
 
   const handleAuthorPress = async () => {
@@ -42,19 +45,19 @@ const RootScreen = () => {
     <SafeAreaView className="flex-1 bg-brand-white" edges={['top', 'bottom']}>
       <View className="flex-1 px-8">
         <View className="flex-1 items-center justify-center">
-          <View className="items-center mb-6">
+          <View className="items-center mb-4">
             <AppIcon size="5xl" />
             
-            <Text className="text-brand-black text-5xl font-bold mt-4 mb-1 text-center">
+            <Text className="text-brand-black text-5xl font-bold mt-2 mb-1 text-center">
               {configs.appName}
             </Text>
             
-            <Text className="text-brand-muted text-base text-center font-medium mb-6">
+            <Text className="text-brand-muted text-base text-center font-medium mb-4">
               {configs.appTagline}
             </Text>
           </View>
 
-          <Text className="text-brand-dark text-xl text-center mb-8 leading-8 px-2 max-w-md">
+          <Text className="text-brand-dark text-xl text-center mb-5 leading-8 px-2 max-w-md">
             {configs.appDescription}
           </Text>
 
