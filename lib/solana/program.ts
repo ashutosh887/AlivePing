@@ -2,6 +2,19 @@ import { AnchorProvider, BN, Program, Wallet } from '@coral-xyz/anchor'
 import { PublicKey, SystemProgram, Transaction, VersionedTransaction } from '@solana/web3.js'
 import { Buffer } from 'buffer'
 import 'react-native-get-random-values'
+
+if (typeof global.Buffer === 'undefined') {
+  global.Buffer = Buffer
+}
+
+if (!Buffer.prototype.subarray) {
+  Buffer.prototype.subarray = function subarray(begin: number | undefined, end: number | undefined) {
+    const result = Uint8Array.prototype.subarray.apply(this, [begin, end])
+    Object.setPrototypeOf(result, Buffer.prototype)
+    return result
+  }
+}
+
 import { getConnection, getProgramId } from './connection'
 import { IDL } from './idl'
 import { getLocalWallet } from './localWallet'
@@ -27,8 +40,8 @@ export const getProgram = async (): Promise<Program | null> => {
       commitment: 'confirmed',
     })
     
-    const idlJson = JSON.parse(JSON.stringify(IDL))
-    const program = new Program(idlJson, provider)
+    const programId = getProgramId()
+    const program = new Program(IDL, provider)
     return program
   } catch (error: any) {
     console.error('Error creating program:', error)
@@ -110,7 +123,6 @@ export const startCheckIn = async (
   }
 
   const hashBuffer = Buffer.from(contextHashArray)
-
   const deadlineBN = new BN(deadline.toString())
 
   try {
