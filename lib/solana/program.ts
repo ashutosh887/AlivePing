@@ -22,14 +22,13 @@ export const getProgram = async (): Promise<Program | null> => {
   try {
     const connection = getConnection()
     const wallet = await getWalletProvider()
-    const programId = getProgramId()
     
     const provider = new AnchorProvider(connection, wallet, {
       commitment: 'confirmed',
     })
     
-    const ProgramClass = Program as any
-    const program = new ProgramClass(IDL, provider)
+    const idlJson = JSON.parse(JSON.stringify(IDL))
+    const program = new Program(idlJson, provider)
     return program
   } catch (error: any) {
     console.error('Error creating program:', error)
