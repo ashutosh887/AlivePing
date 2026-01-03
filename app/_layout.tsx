@@ -1,7 +1,7 @@
+import "@/global.css";
 import { DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import "../global.css";
 
 export default function RootLayout() {
   return (
@@ -9,7 +9,7 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
       </Stack>
-      <StatusBar style="dark" translucent={false} />
+      <StatusBar style="dark" />
     </ThemeProvider>
   );
 }
