@@ -1,12 +1,10 @@
 import { Button } from '@/components/ui/Button'
-import configs from '@/config'
 import { checkConnectionHealth } from '@/lib/solana/connectionHealth'
 import { clearLocalWallet, generateLocalWallet, getLocalWalletPublicKey, hasLocalWallet } from '@/lib/solana/localWallet'
-import { clearWallet, getWalletInfo, hasWallet, setWallet, validateWallet } from '@/lib/solana/wallet'
+import { clearWallet, getWalletInfo, hasWallet, setWallet as setWalletStorage, validateWallet } from '@/lib/solana/wallet'
 import { connectWallet, disconnectWallet } from '@/lib/solana/walletConnection'
 import { useAppStore } from '@/lib/store'
 import { useRouter } from 'expo-router'
-import Constants from 'expo-constants'
 import { AlertCircle, ArrowLeft, CheckCircle2, Key, RefreshCw, Wallet } from 'lucide-react-native'
 import React, { useCallback, useEffect, useState } from 'react'
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native'
@@ -40,7 +38,12 @@ const AuthScreen = () => {
     try {
       setError(null)
       const exists = await hasWallet()
-      const localExists = await hasLocalWallet()
+      let localExists = false
+      try {
+        localExists = await hasLocalWallet()
+      } catch (e) {
+        console.error('hasLocalWallet error:', e)
+      }
       
       if (exists || localExists) {
         const isValid = await validateWallet()
@@ -92,7 +95,7 @@ const AuthScreen = () => {
     try {
       const walletInfo = await generateLocalWallet()
       
-      await setWallet(walletInfo.publicKey, 'local_keypair')
+      await setWalletStorage(walletInfo.publicKey, 'local_keypair')
       
       setWalletAddress(walletInfo.publicKey)
       setIsConnected(true)
