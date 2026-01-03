@@ -1,4 +1,4 @@
-import { AnchorProvider, BN, Program, Wallet } from '@coral-xyz/anchor'
+import { AnchorProvider, BN, Idl, Program, Wallet } from '@coral-xyz/anchor'
 import { PublicKey, SystemProgram, Transaction, VersionedTransaction } from '@solana/web3.js'
 import { Buffer } from 'buffer'
 import 'react-native-get-random-values'
@@ -15,7 +15,7 @@ if (!Buffer.prototype.subarray) {
   }
 }
 
-import { getConnection, getProgramId } from './connection'
+import { getConnection } from './connection'
 import { IDL } from './idl'
 import { getLocalWallet } from './localWallet'
 import { getWalletInfo } from './wallet'
@@ -31,7 +31,13 @@ export type SafetySession = {
   contextHash: number[]
 }
 
+let cachedProgram: Program | null = null
+
 export const getProgram = async (): Promise<Program | null> => {
+  if (cachedProgram) {
+    return cachedProgram
+  }
+
   try {
     const connection = getConnection()
     const wallet = await getWalletProvider()
@@ -40,9 +46,10 @@ export const getProgram = async (): Promise<Program | null> => {
       commitment: 'confirmed',
     })
     
-    const programId = getProgramId()
-    const program = new Program(IDL, provider)
-    return program
+    const programId = new PublicKey('9ykG65VCa5KsbKkc1HdgbZRDr61fYjHYnDGy17LafX1e')
+    
+    cachedProgram = new Program(IDL as Idl, programId, provider)
+    return cachedProgram
   } catch (error: any) {
     console.error('Error creating program:', error)
     return null
@@ -100,7 +107,7 @@ export const getWalletProvider = async (): Promise<Wallet> => {
 export const getSessionPDA = async (userPublicKey: PublicKey): Promise<[PublicKey, number]> => {
   return PublicKey.findProgramAddressSync(
     [Buffer.from('safety_session'), userPublicKey.toBuffer()],
-    getProgramId()
+    new PublicKey('9ykG65VCa5KsbKkc1HdgbZRDr61fYjHYnDGy17LafX1e')
   )
 }
 
