@@ -3,7 +3,9 @@ import { Card } from '@/components/ui/Card'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { useContacts } from '@/lib/hooks/useContacts'
 import * as Haptics from 'expo-haptics'
+import * as Linking from 'expo-linking'
 import { Plus, Star, Trash2, UserPlus, Users } from 'lucide-react-native'
+import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon'
 import React, { useState } from 'react'
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -94,6 +96,22 @@ const ContactsScreen = () => {
         },
       ]
     )
+  }
+
+  const handleWhatsApp = async (phone: string) => {
+    try {
+      const cleanedPhone = phone.replace(/\D/g, '')
+      const whatsappUrl = `https://wa.me/${cleanedPhone}`
+      const canOpen = await Linking.canOpenURL(whatsappUrl)
+      if (canOpen) {
+        await Linking.openURL(whatsappUrl)
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+      } else {
+        Alert.alert('Error', 'Unable to open WhatsApp. Please make sure WhatsApp is installed.')
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Unable to open WhatsApp. Please try again.')
+    }
   }
 
   return (
@@ -192,48 +210,51 @@ const ContactsScreen = () => {
               </Text>
             </Card>
           ) : (
-            <View className="gap-4">
+            <View className="gap-3">
               {trustedContacts.map((contact) => (
-                <Card key={contact.id}>
-                  <View className="flex-row items-center justify-between">
-                    <View className="flex-1 flex-row items-center gap-4">
-                      <View className="w-16 h-16 rounded-full bg-brand-accent items-center justify-center">
-                        <Text className="text-2xl font-bold text-brand-black">
+                <Card key={contact.id} className="p-4">
+                  <View className="flex-row items-center gap-3">
+                    <View className="w-12 h-12 rounded-full bg-brand-accent items-center justify-center flex-shrink-0">
+                      <Text className="text-xl font-bold text-brand-black">
                           {contact.name.charAt(0).toUpperCase()}
                         </Text>
                       </View>
                       
-                      <View className="flex-1">
-                        <View className="flex-row items-center gap-3 mb-1.5">
-                          <Text className="text-lg font-semibold text-brand-black">
+                    <View className="flex-1 min-w-0">
+                      <View className="flex-row items-center gap-1.5 mb-1">
+                        <Text className="text-base font-semibold text-brand-black" numberOfLines={1}>
                             {contact.name}
-                          </Text>
-                          {contact.isPrimary && (
-                            <Star size={18} color="#000000" fill="#000000" />
-                          )}
-                        </View>
-                        <Text className="text-sm text-brand-muted">
-                          {contact.phone}
                         </Text>
-                      </View>
-                    </View>
-                    
-                    <View className="flex-row gap-3">
-                      {!contact.isPrimary && (
+                        {contact.isPrimary ? (
+                          <Star size={14} color="#000000" fill="#000000" />
+                        ) : (
                         <Pressable
                           onPress={() => {
                             setPrimaryContact(contact.id)
                             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
                           }}
-                          className="p-3 rounded-xl bg-brand-light active:opacity-80"
+                            hitSlop={4}
                         >
-                          <Star size={18} color="#000000" />
+                            <Star size={14} color="#9CA3AF" />
                         </Pressable>
                       )}
+                      </View>
+                      <Text className="text-xs text-brand-muted" numberOfLines={1}>
+                        {contact.phone}
+                      </Text>
+                    </View>
+                    
+                    <View className="flex-row gap-2">
+                      <Pressable
+                        onPress={() => handleWhatsApp(contact.phone)}
+                        className="p-2.5 rounded-xl bg-green-50 active:opacity-80"
+                      >
+                        <WhatsAppIcon size={18} color="#25D366" />
+                      </Pressable>
                       
                       <Pressable
                         onPress={() => handleRemoveContact(contact.id, contact.name)}
-                        className="p-3 rounded-xl bg-red-50 active:opacity-80"
+                        className="p-2.5 rounded-xl bg-red-50 active:opacity-80"
                       >
                         <Trash2 size={18} color="#EF4444" />
                       </Pressable>
