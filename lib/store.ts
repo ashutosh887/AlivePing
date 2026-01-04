@@ -17,6 +17,8 @@ export type Event = {
     longitude: number;
     accuracy: number | null;
   };
+  whatsappSent?: boolean;
+  whatsappSentAt?: number;
 };
 
 export type CheckInState = {
@@ -43,7 +45,7 @@ export type TrustedContact = {
 };
 
 export type NotificationPreferences = {
-  smsEnabled: boolean;
+  whatsappEnabled: boolean;
   pushEnabled: boolean;
   emailEnabled: boolean;
   soundEnabled: boolean;
@@ -83,7 +85,8 @@ type Store = {
   cancelCheckIn: () => void;
   triggerAlert: (location?: { latitude: number; longitude: number; accuracy: number | null }) => void;
   cancelAlert: () => void;
-  triggerPanic: (location?: { latitude: number; longitude: number; accuracy: number | null }) => void;
+  triggerPanic: (location?: { latitude: number; longitude: number; accuracy: number | null }) => Event;
+  updateEventWhatsAppStatus: (eventId: string, sent: boolean) => void;
   clearEvents: () => void;
   addTrustedContact: (contact: Omit<TrustedContact, "id">) => void;
   removeTrustedContact: (id: string) => void;
@@ -111,7 +114,7 @@ export const useAppStore = create<Store>()(
       trustedContacts: [],
       scheduledCheckIns: [],
       notificationPreferences: {
-        smsEnabled: true,
+        whatsappEnabled: true,
         pushEnabled: true,
         emailEnabled: false,
         soundEnabled: true,
@@ -136,7 +139,8 @@ export const useAppStore = create<Store>()(
 
       startCheckIn: (location?: { latitude: number; longitude: number; accuracy: number | null }) => {
         const now = Date.now();
-        const durationMs = (get().appSettings.checkInDurationMinutes || 5) * 60 * 1000;
+        const appSettings = get().appSettings || { checkInDurationMinutes: 5 };
+        const durationMs = (appSettings.checkInDurationMinutes || 5) * 60 * 1000;
         const checkInTime = now + durationMs;
         set({
           checkIn: {
@@ -159,10 +163,12 @@ export const useAppStore = create<Store>()(
       },
 
       confirmCheckIn: () => {
-        const { checkIn, events } = get();
+        const state = get();
+        const checkIn = state.checkIn;
+        const events = state.events || [];
         if (!checkIn) return;
 
-        const activeEvent = events.find(e => e.type === "CHECK_IN" && e.status === "triggered" && e.checkInTime === checkIn.checkInTime);
+        const activeEvent = events.find(e => e && e.type === "CHECK_IN" && e.status === "triggered" && e.checkInTime === checkIn.checkInTime);
         
         set((state) => ({
           events: state.events.map(event => 
@@ -179,11 +185,13 @@ export const useAppStore = create<Store>()(
       },
 
       triggerAlert: (location?: { latitude: number; longitude: number; accuracy: number | null }) => {
-        const { checkIn, events } = get();
+        const state = get();
+        const checkIn = state.checkIn;
+        const events = state.events || [];
         const now = Date.now();
         const graceWindowEnd = now + GRACE_WINDOW_MS;
         
-        const activeEvent = events.find(e => e.type === "CHECK_IN" && e.status === "triggered");
+        const activeEvent = events.find(e => e && e.type === "CHECK_IN" && e.status === "triggered");
 
         set((state) => ({
           events: state.events.map(event => 
@@ -223,12 +231,22 @@ export const useAppStore = create<Store>()(
         }));
       },
 
+      updateEventWhatsAppStatus: (eventId: string, sent: boolean) => {
+        set((state) => ({
+          events: (state.events || []).map(event =>
+            event && event.id === eventId
+              ? { ...event, whatsappSent: sent, whatsappSentAt: sent ? Date.now() : undefined }
+              : event
+          ).filter(Boolean),
+        }));
+      },
+
       clearEvents: () => set({ events: [] }),
 
       addTrustedContact: (contact) =>
         set((state) => ({
           trustedContacts: [
-            ...state.trustedContacts,
+            ...(state.trustedContacts || []),
             {
               ...contact,
               id: generateUUID(),
@@ -238,22 +256,22 @@ export const useAppStore = create<Store>()(
 
       removeTrustedContact: (id) =>
         set((state) => ({
-          trustedContacts: state.trustedContacts.filter((c) => c.id !== id),
+          trustedContacts: (state.trustedContacts || []).filter((c) => c && c.id !== id),
         })),
 
       updateTrustedContact: (id, updates) =>
         set((state) => ({
-          trustedContacts: state.trustedContacts.map((contact) =>
-            contact.id === id ? { ...contact, ...updates } : contact
-          ),
+          trustedContacts: (state.trustedContacts || []).map((contact) =>
+            contact && contact.id === id ? { ...contact, ...updates } : contact
+          ).filter(Boolean),
         })),
 
       setPrimaryContact: (id) =>
         set((state) => ({
-          trustedContacts: state.trustedContacts.map((contact) => ({
+          trustedContacts: (state.trustedContacts || []).map((contact) => ({
             ...contact,
-            isPrimary: contact.id === id,
-          })),
+            isPrimary: contact && contact.id === id,
+          })).filter(Boolean),
         })),
 
       updateNotificationPreferences: (prefs) =>
@@ -285,7 +303,7 @@ export const useAppStore = create<Store>()(
           wallet: {
             ...state.wallet,
             ...wallet,
-            lastConnected: wallet.isConnected ? Date.now() : state.wallet.lastConnected,
+            lastConnected: wallet.isConnected ? Date.now() : (state.wallet?.lastConnected ?? null),
           },
         })),
 
@@ -301,24 +319,24 @@ export const useAppStore = create<Store>()(
 
       triggerPanic: (location?: { latitude: number; longitude: number; accuracy: number | null }) => {
         const now = Date.now();
-        set((state) => ({
-          events: [
-            {
-              id: generateUUID(),
+        const eventId = generateUUID();
+        const newEvent: Event = {
+          id: eventId,
               type: "PANIC",
               timestamp: now,
               status: "triggered",
               location,
-            },
-            ...state.events,
-          ],
+        };
+        set((state) => ({
+          events: [newEvent, ...state.events],
         }));
+        return newEvent;
       },
 
       addScheduledCheckIn: (checkIn) =>
         set((state) => ({
           scheduledCheckIns: [
-            ...state.scheduledCheckIns,
+            ...(state.scheduledCheckIns || []),
             {
               ...checkIn,
               id: generateUUID(),
@@ -328,14 +346,14 @@ export const useAppStore = create<Store>()(
 
       removeScheduledCheckIn: (id) =>
         set((state) => ({
-          scheduledCheckIns: state.scheduledCheckIns.filter((c) => c.id !== id),
+          scheduledCheckIns: (state.scheduledCheckIns || []).filter((c) => c && c.id !== id),
         })),
 
       updateScheduledCheckIn: (id, updates) =>
         set((state) => ({
-          scheduledCheckIns: state.scheduledCheckIns.map((checkIn) =>
-            checkIn.id === id ? { ...checkIn, ...updates } : checkIn
-          ),
+          scheduledCheckIns: (state.scheduledCheckIns || []).map((checkIn) =>
+            checkIn && checkIn.id === id ? { ...checkIn, ...updates } : checkIn
+          ).filter(Boolean),
         })),
 
       resetStore: () =>
@@ -345,7 +363,7 @@ export const useAppStore = create<Store>()(
           trustedContacts: [],
           scheduledCheckIns: [],
           notificationPreferences: {
-            smsEnabled: true,
+            whatsappEnabled: true,
             pushEnabled: true,
             emailEnabled: false,
             soundEnabled: true,
@@ -372,6 +390,71 @@ export const useAppStore = create<Store>()(
     {
       name: "aliveping-store",
       storage: createJSONStorage(() => AsyncStorage),
+      migrate: (persistedState: any) => {
+        if (!persistedState || typeof persistedState !== 'object') {
+          return {
+            events: [],
+            checkIn: null,
+            trustedContacts: [],
+            scheduledCheckIns: [],
+            notificationPreferences: {
+              whatsappEnabled: true,
+              pushEnabled: true,
+              emailEnabled: false,
+              soundEnabled: true,
+              vibrationEnabled: true,
+            },
+            privacySettings: {
+              shareLocation: true,
+              shareLastSeen: true,
+              dataRetentionDays: 30,
+              analyticsEnabled: false,
+            },
+            appSettings: {
+              checkInDurationMinutes: 5,
+              userPhoneNumber: null,
+            },
+            wallet: {
+              publicKey: null,
+              type: null,
+              isConnected: false,
+              lastConnected: null,
+            },
+          }
+        }
+
+        const state = persistedState.state || persistedState
+
+        return {
+          events: Array.isArray(state.events) ? state.events.filter(Boolean) : [],
+          checkIn: state.checkIn || null,
+          trustedContacts: Array.isArray(state.trustedContacts) ? state.trustedContacts.filter(Boolean) : [],
+          scheduledCheckIns: Array.isArray(state.scheduledCheckIns) ? state.scheduledCheckIns.filter(Boolean) : [],
+          notificationPreferences: {
+            whatsappEnabled: state.notificationPreferences?.whatsappEnabled ?? true,
+            pushEnabled: state.notificationPreferences?.pushEnabled ?? true,
+            emailEnabled: state.notificationPreferences?.emailEnabled ?? false,
+            soundEnabled: state.notificationPreferences?.soundEnabled ?? true,
+            vibrationEnabled: state.notificationPreferences?.vibrationEnabled ?? true,
+          },
+          privacySettings: {
+            shareLocation: state.privacySettings?.shareLocation ?? true,
+            shareLastSeen: state.privacySettings?.shareLastSeen ?? true,
+            dataRetentionDays: state.privacySettings?.dataRetentionDays ?? 30,
+            analyticsEnabled: state.privacySettings?.analyticsEnabled ?? false,
+          },
+          appSettings: {
+            checkInDurationMinutes: state.appSettings?.checkInDurationMinutes ?? 5,
+            userPhoneNumber: state.appSettings?.userPhoneNumber ?? null,
+          },
+          wallet: {
+            publicKey: state.wallet?.publicKey ?? null,
+            type: state.wallet?.type ?? null,
+            isConnected: state.wallet?.isConnected ?? false,
+            lastConnected: state.wallet?.lastConnected ?? null,
+          },
+        }
+      },
     }
   )
 );
