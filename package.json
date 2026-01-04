@@ -24,6 +24,7 @@
     "@web3auth/solana-provider": "^9.7.0",
     "base-64": "^1.0.0",
     "buffer": "^6.0.3",
+    "crypto-browserify": "^3.12.1",
     "expo": "~54.0.30",
     "expo-battery": "^10.0.8",
     "expo-constants": "~18.0.12",
