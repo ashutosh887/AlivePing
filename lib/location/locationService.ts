@@ -1,5 +1,9 @@
 import * as Crypto from 'expo-crypto'
 import * as Location from 'expo-location'
+import { Platform } from 'react-native'
+import { requestLocationPermissions as requestLocationPermissionsWeb, getCurrentLocation as getCurrentLocationWeb, getLastKnownLocation as getLastKnownLocationWeb } from '@/lib/utils/locationWeb'
+
+const isWeb = Platform.OS === 'web'
 
 export type LocationSnapshot = {
   latitude: number
@@ -12,16 +16,21 @@ let locationSubscription: Location.LocationSubscription | null = null
 
 export const requestLocationPermissions = async (): Promise<boolean> => {
   try {
+    if (isWeb) {
+      return await requestLocationPermissionsWeb()
+    }
     const { status } = await Location.requestForegroundPermissionsAsync()
     return status === 'granted'
   } catch (error) {
-    console.error('Location permission error:', error)
     return false
   }
 }
 
 export const getCurrentLocation = async (): Promise<LocationSnapshot | null> => {
   try {
+    if (isWeb) {
+      return await getCurrentLocationWeb()
+    }
     const hasPermission = await requestLocationPermissions()
     if (!hasPermission) {
       return null
@@ -38,13 +47,15 @@ export const getCurrentLocation = async (): Promise<LocationSnapshot | null> => 
       timestamp: location.timestamp,
     }
   } catch (error) {
-    console.error('Get location error:', error)
     return null
   }
 }
 
 export const getLastKnownLocation = async (): Promise<LocationSnapshot | null> => {
   try {
+    if (isWeb) {
+      return await getLastKnownLocationWeb()
+    }
     const hasPermission = await requestLocationPermissions()
     if (!hasPermission) {
       return null
@@ -66,7 +77,6 @@ export const getLastKnownLocation = async (): Promise<LocationSnapshot | null> =
       timestamp: location.timestamp,
     }
   } catch (error) {
-    console.error('Get last known location error:', error)
     return null
   }
 }
@@ -102,7 +112,6 @@ export const startLocationTracking = async (
 
     return true
   } catch (error) {
-    console.error('Start location tracking error:', error)
     return false
   }
 }
@@ -127,7 +136,6 @@ export const hashLocation = async (location: LocationSnapshot): Promise<number[]
     }
     return Array.from(hashBytes)
   } catch (error) {
-    console.error('Hash location error:', error)
     return new Array(32).fill(0)
   }
 }
