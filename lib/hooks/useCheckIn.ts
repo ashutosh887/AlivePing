@@ -3,7 +3,7 @@ import { getCurrentLocation, getLastKnownLocation, hashLocation } from '@/lib/lo
 import { logEvent } from '@/lib/monitoring/datadog'
 import { publishSafetyEvent } from '@/lib/monitoring/events'
 import { updateLastKnownState } from '@/lib/services/phoneOffFallback'
-import { generateAlertMessage, sendSMS } from '@/lib/services/sms'
+import { generateAlertMessage, sendWhatsApp, getAlertPhoneNumber } from '@/lib/services/whatsapp'
 import { confirmSafe as solanaConfirmSafe, startCheckIn as solanaStartCheckIn } from '@/lib/solana/program'
 import { getWalletPublicKey } from '@/lib/solana/wallet'
 import { useAppStore } from '@/lib/store'
@@ -36,7 +36,6 @@ export const useCheckIn = () => {
       try {
         await solanaStartCheckIn(deadline, locationHash)
       } catch (error) {
-        console.error('Solana start check-in error:', error)
       }
 
       const locationData = location ? {
@@ -66,7 +65,6 @@ export const useCheckIn = () => {
         await publishSafetyEvent('check_in_started', userId, { location: location ? 'available' : 'unavailable' })
       }
     } catch (error) {
-      console.error('Start check-in error:', error)
     } finally {
       setIsProcessing(false)
     }
@@ -80,7 +78,6 @@ export const useCheckIn = () => {
       try {
         await solanaConfirmSafe()
       } catch (error) {
-        console.error('Solana confirm safe error:', error)
       }
 
       storeConfirmCheckIn()
@@ -103,7 +100,6 @@ export const useCheckIn = () => {
         await publishSafetyEvent('check_in_confirmed', userId)
       }
     } catch (error) {
-      console.error('Confirm check-in error:', error)
     } finally {
       setIsProcessing(false)
     }
@@ -185,41 +181,45 @@ export const useCheckIn = () => {
           await publishSafetyEvent('alert_triggered', userId)
         }
 
-        if (notificationPreferences.smsEnabled && trustedContacts.length > 0) {
+        const whatsappEnabled = notificationPreferences?.whatsappEnabled ?? true
+        
+        if (whatsappEnabled) {
           const activeEvent = useAppStore.getState().events.find(
             e => e.type === "CHECK_IN" && e.status === "triggered"
           )
           
-          const location = activeEvent?.location
-          const alertMessage = generateAlertMessage('check_in_missed', location)
+          if (activeEvent) {
+            const location = activeEvent.location
+            const batteryService = await import('@/lib/services/battery')
+            const currentBattery = await batteryService.getBatteryInfo()
+            
+            const alertMessage = generateAlertMessage(
+              'check_in_missed', 
+              location, 
+              undefined, 
+              currentBattery ? {
+                batteryLevel: currentBattery.batteryLevel,
+                isCharging: currentBattery.isCharging,
+                deviceModel: currentBattery.deviceModel,
+                manufacturer: currentBattery.manufacturer,
+              } : null
+            )
+            const alertPhone = getAlertPhoneNumber()
+            const updateEventWhatsAppStatus = useAppStore.getState().updateEventWhatsAppStatus
 
-          const contactsToNotify = [...trustedContacts]
-          if (appSettings.userPhoneNumber) {
-            contactsToNotify.push({
-              id: 'self',
-              name: 'Self',
-              phone: appSettings.userPhoneNumber,
-              isPrimary: false,
-            })
-          }
-
-          const smsPromises = contactsToNotify.map(contact =>
-            sendSMS({
-              to: contact.phone,
+            const sent = await sendWhatsApp({
+              to: alertPhone,
               message: alertMessage,
-            }).catch(error => {
-              console.error(`Failed to send SMS to ${contact.name}:`, error)
-              return false
-            })
-          )
+            }).catch(() => false)
 
-          await Promise.allSettled(smsPromises)
+            updateEventWhatsAppStatus(activeEvent.id, sent)
+          }
         }
       }
 
       sendAlertNotifications()
     }
-  }, [isAlertActive, trustedContacts, notificationPreferences.smsEnabled, appSettings.userPhoneNumber])
+  }, [isAlertActive, notificationPreferences.whatsappEnabled])
 
   return {
     checkIn,

@@ -2,6 +2,7 @@ import { useAppStore, TrustedContact } from '@/lib/store'
 import { logEvent } from '@/lib/monitoring/datadog'
 import { DATADOG_EVENTS } from '@/lib/constants/datadog'
 import { useState } from 'react'
+import { Platform } from 'react-native'
 
 export const useContacts = () => {
   const trustedContacts = useAppStore((s) => s.trustedContacts)
@@ -14,6 +15,9 @@ export const useContacts = () => {
   const importFromDevice = async () => {
     setIsImporting(true)
     try {
+      if (Platform.OS === 'web') {
+        throw new Error('Contact import not available on web')
+      }
       const { requestPermissionsAsync, getContactsAsync, Fields } = await import('expo-contacts')
       
       const { status } = await requestPermissionsAsync()
@@ -43,7 +47,6 @@ export const useContacts = () => {
 
       return contacts
     } catch (error) {
-      console.error('Error importing contacts:', error)
       throw error
     } finally {
       setIsImporting(false)
