@@ -22,6 +22,7 @@ AlivePing automatically alerts trusted contacts if you fail to check in, providi
 - React Native (Expo)
 - TypeScript
 - Solana (Anchor) - **Deployed on Testnet**
+- Meta WhatsApp Business API (Alerts)
 - NativeWind
 - Datadog (Monitoring)
 - Confluent Cloud (Event Streaming)
@@ -84,11 +85,16 @@ EXPO_PUBLIC_CONFLUENT_TOPIC=AlivePing
 # Google Gemini AI
 EXPO_PUBLIC_GEMINI_API_KEY=your_gemini_key
 
-# Twilio SMS (Required for SMS alerts)
-EXPO_PUBLIC_TWILIO_ACCOUNT_SID=your_twilio_account_sid
-EXPO_PUBLIC_TWILIO_AUTH_TOKEN=your_twilio_auth_token
-EXPO_PUBLIC_TWILIO_FROM_NUMBER=+1234567890
+# Meta WhatsApp Business API (Required for WhatsApp alerts)
+EXPO_PUBLIC_WHATSAPP_ACCESS_TOKEN=your_whatsapp_access_token
+EXPO_PUBLIC_WHATSAPP_PHONE_NUMBER_ID=your_phone_number_id
 ```
+
+**Note:** WhatsApp alerts are sent using Meta's WhatsApp Business API. You'll need to:
+1. Create a Meta Business account
+2. Set up a WhatsApp Business account
+3. Get an access token from Meta's Graph API
+4. Configure the phone number ID and alert recipient numbers
 
 ### Run
 
