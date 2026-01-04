@@ -1,6 +1,6 @@
-import { Platform } from 'react-native'
 import { DATADOG_EVENTS } from '@/lib/constants/datadog'
 import { logEvent } from '@/lib/monitoring/datadog'
+import { Platform } from 'react-native'
 
 export interface SendWhatsAppOptions {
   to: string
@@ -40,7 +40,20 @@ const getWhatsAppConfig = () => {
   }
 }
 
-export const sendWhatsApp = async (options: SendWhatsAppOptions): Promise<boolean> => {
+export interface WhatsAppTemplateParams {
+  eventType: 'panic' | 'check_in_missed' | 'alert'
+  userName?: string
+  timestamp: string
+  location?: string
+  locationLink?: string
+  batteryInfo?: string
+}
+
+const getTemplateName = (): string => {
+  return process.env.EXPO_PUBLIC_WHATSAPP_TEMPLATE_NAME || 'aliveping_safety_alert_v1'
+}
+
+export const sendWhatsApp = async (options: SendWhatsAppOptions | { to: string; templateParams: WhatsAppTemplateParams }): Promise<boolean> => {
   const config = getWhatsAppConfig()
   if (!config) {
     return false
@@ -54,14 +67,72 @@ export const sendWhatsApp = async (options: SendWhatsAppOptions): Promise<boolea
     }
     
     const url = `https://graph.facebook.com/v22.0/${config.phoneNumberId}/messages`
+    const templateName = getTemplateName()
     
-    const requestBody = {
-      messaging_product: 'whatsapp',
-      to: phoneNumber,
-      type: 'text',
-      text: {
-        body: options.message,
-      },
+    let requestBody: any
+    
+    if ('templateParams' in options) {
+      const params = options.templateParams
+      const bodyParams: any[] = []
+      
+      const alertTypeText = params.eventType === 'panic' 
+        ? 'PANIC ALERT' 
+        : params.eventType === 'check_in_missed' 
+          ? 'MISSED CHECK-IN' 
+          : 'SAFETY ALERT'
+      
+      bodyParams.push({ type: 'text', text: alertTypeText })
+      bodyParams.push({ type: 'text', text: params.userName || 'User' })
+      bodyParams.push({ type: 'text', text: params.timestamp })
+      
+      if (params.location) {
+        bodyParams.push({ type: 'text', text: params.location })
+      } else {
+        bodyParams.push({ type: 'text', text: 'Unknown' })
+      }
+      
+      if (params.locationLink) {
+        bodyParams.push({ type: 'text', text: params.locationLink })
+      } else {
+        bodyParams.push({ type: 'text', text: 'N/A' })
+      }
+      
+      if (params.batteryInfo) {
+        bodyParams.push({ type: 'text', text: params.batteryInfo })
+      } else {
+        bodyParams.push({ type: 'text', text: 'N/A' })
+      }
+      
+      requestBody = {
+        messaging_product: 'whatsapp',
+        to: phoneNumber,
+        type: 'template',
+        template: {
+          name: templateName,
+          language: { code: 'en_US' },
+          components: [{
+            type: 'body',
+            parameters: bodyParams
+          }]
+        },
+      }
+    } else {
+      requestBody = {
+        messaging_product: 'whatsapp',
+        to: phoneNumber,
+        type: 'template',
+        template: {
+          name: templateName,
+          language: { code: 'en_US' },
+          components: [{
+            type: 'body',
+            parameters: [{
+              type: 'text',
+              text: options.message.substring(0, 1024)
+            }]
+          }]
+        },
+      }
     }
     
     const response = await fetch(url, {
@@ -87,55 +158,6 @@ export const sendWhatsApp = async (options: SendWhatsAppOptions): Promise<boolea
             event: DATADOG_EVENTS.WHATSAPP_TOKEN_EXPIRED,
             payload: { errorCode, errorMessage },
           })
-          return false
-        }
-        
-        if (errorCode === 131047 || errorCode === 131026) {
-          const templateBody = {
-            messaging_product: 'whatsapp',
-            to: phoneNumber,
-            type: 'template',
-            template: {
-              name: 'jaspers_market_plain_text_v1',
-              language: { code: 'en_US' },
-              components: [{
-                type: 'body',
-                parameters: [{
-                  type: 'text',
-                  text: options.message.substring(0, 1024)
-                }]
-              }]
-            },
-          }
-          
-          const templateResponse = await fetch(url, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${config.accessToken}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(templateBody),
-          })
-          
-          const templateResponseText = await templateResponse.text()
-          
-          if (!templateResponse.ok) {
-            return false
-          }
-          
-          const templateResult = JSON.parse(templateResponseText)
-          if (templateResult.error) {
-            return false
-          }
-          
-          if (templateResult.messages && templateResult.messages[0]?.id) {
-            logEvent({
-              event: DATADOG_EVENTS.WHATSAPP_SENT,
-              payload: { messageId: templateResult.messages[0].id, platform: Platform.OS },
-            })
-            return true
-          }
-          
           return false
         }
       } catch (e) {
@@ -192,38 +214,33 @@ export const generateAlertMessage = (
   location?: { latitude: number; longitude: number },
   userName?: string,
   batteryInfo?: WhatsAppBatteryInfo | null
-): string => {
+): WhatsAppTemplateParams => {
   const name = userName || 'User'
-  const timestamp = new Date().toLocaleString()
+  const timestamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
   
-  let locationStr = 'Location: Unknown'
-  let locationLink = ''
+  let locationStr: string | undefined
+  let locationLink: string | undefined
   
   if (location) {
     const lat = location.latitude.toFixed(6)
     const lng = location.longitude.toFixed(6)
-    locationStr = `Location: ${lat}, ${lng}`
-    locationLink = `\n📍 View on Map: https://www.google.com/maps?q=${lat},${lng}`
+    locationStr = `${lat}, ${lng}`
+    locationLink = `https://www.google.com/maps?q=${lat},${lng}`
   }
 
-  let batteryStr = ''
+  let batteryStr: string | undefined
   if (batteryInfo) {
     const batteryStatus = batteryInfo.isCharging ? 'Charging' : `${batteryInfo.batteryLevel}%`
-    batteryStr = `\n🔋 Battery: ${batteryStatus} (${batteryInfo.manufacturer} ${batteryInfo.deviceModel})`
+    batteryStr = `${batteryStatus} (${batteryInfo.manufacturer} ${batteryInfo.deviceModel})`
   }
 
-  switch (eventType) {
-    case 'panic':
-      return `🚨 PANIC ALERT from ${name}\n\nTime: ${timestamp}\n${locationStr}${locationLink}${batteryStr}\n\nThis is an emergency. Please check on them immediately.\n\n- AlivePing Safety System`
-    
-    case 'check_in_missed':
-      return `⚠️ MISSED CHECK-IN from ${name}\n\nTime: ${timestamp}\n${locationStr}${locationLink}${batteryStr}\n\nThey did not confirm their safety check-in. Please check on them.\n\n- AlivePing Safety System`
-    
-    case 'alert':
-      return `⚠️ SAFETY ALERT from ${name}\n\nTime: ${timestamp}\n${locationStr}${locationLink}${batteryStr}\n\nA safety alert has been triggered. Please check on them.\n\n- AlivePing Safety System`
-    
-    default:
-      return `⚠️ Safety Alert from ${name} at ${timestamp}${locationLink}${batteryStr}`
+  return {
+    eventType,
+    userName: name,
+    timestamp,
+    location: locationStr,
+    locationLink,
+    batteryInfo: batteryStr,
   }
 }
 

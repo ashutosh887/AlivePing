@@ -36,7 +36,7 @@ export const escalateViaWhatsApp = async (
       ? 'check_in_missed' 
       : 'alert'
 
-  const alertMessage = generateAlertMessage(
+  const templateParams = generateAlertMessage(
     eventType,
     lastLocation ? {
       latitude: lastLocation.latitude,
@@ -51,12 +51,10 @@ export const escalateViaWhatsApp = async (
     } : null
   )
 
-  const escalationMessage = `${alertMessage}\n\n⚠️ PHONE OFF: This alert was sent because the device could not be reached. Last known state: ${new Date(lastState?.timestamp || Date.now()).toLocaleString()}`
-
   const alertPhone = getAlertPhoneNumber()
   const result = await sendWhatsApp({
     to: alertPhone,
-      message: escalationMessage,
+    templateParams,
   }).catch(() => false)
 
   return result

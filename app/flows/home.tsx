@@ -5,7 +5,6 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { useCheckIn } from '@/lib/hooks/useCheckIn'
 import { BatteryInfo, getBatteryInfo, subscribeToBatteryUpdates } from '@/lib/services/battery'
 import { getNextScheduledTime } from '@/lib/services/scheduledCheckIns'
-import { getSession } from '@/lib/solana/program'
 import { useAppStore } from '@/lib/store'
 import { formatDate, formatTime } from '@/lib/utils'
 import { hapticImpact, hapticNotification, Haptics } from '@/lib/utils/haptics'
@@ -32,15 +31,7 @@ const HomeScreen = () => {
   const trustedContacts = useAppStore((s) => s.trustedContacts)
   const scheduledCheckIns = useAppStore((s) => s.scheduledCheckIns)
   const triggerPanicStore = useAppStore((s) => s.triggerPanic)
-  const [onChainStatus, setOnChainStatus] = useState<string | null>(null)
-  const [isLoadingStatus, setIsLoadingStatus] = useState(false)
   const [batteryInfo, setBatteryInfo] = useState<BatteryInfo | null>(null)
-
-  useEffect(() => {
-    if (checkIn?.isActive) {
-      checkOnChainStatus()
-    }
-  }, [checkIn?.isActive])
 
   useEffect(() => {
     const loadBatteryInfo = async () => {
@@ -104,22 +95,6 @@ const HomeScreen = () => {
     return () => clearInterval(interval)
   }, [scheduledCheckIns, checkIn?.isActive, isProcessing, startCheckIn])
 
-  const checkOnChainStatus = async () => {
-    setIsLoadingStatus(true)
-    try {
-      const session = await getSession()
-      if (session) {
-        const statuses = ['Active', 'Confirmed', 'Expired', 'Panic', 'Closed']
-        setOnChainStatus(statuses[session.status] || 'Unknown')
-      } else {
-        setOnChainStatus('Not on-chain')
-      }
-    } catch (error) {
-      setOnChainStatus(null)
-    } finally {
-      setIsLoadingStatus(false)
-    }
-  }
 
   if (isAlertActive) {
     return <AlertScreen />
@@ -166,7 +141,7 @@ const HomeScreen = () => {
       const batteryService = await import('@/lib/services/battery')
       const currentBattery = await batteryService.getBatteryInfo()
       
-      const alertMessage = whatsappService.generateAlertMessage(
+      const templateParams = whatsappService.generateAlertMessage(
         'panic', 
         locationData,
         undefined,
@@ -181,7 +156,7 @@ const HomeScreen = () => {
       
       const sent = await whatsappService.sendWhatsApp({
         to: alertPhone,
-        message: alertMessage,
+        templateParams,
       }).catch(() => false)
       
       updateEventWhatsAppStatus(panicEvent.id, sent)
@@ -271,22 +246,11 @@ const HomeScreen = () => {
             </View>
           ) : (
             <Card variant="accent" className="mb-6">
-              <View className="flex-row items-center justify-between mb-4">
-                <View className="flex-row items-center gap-3">
-                  <Clock size={24} color="#000000" strokeWidth={2.5} />
-                  <Text className="text-lg font-semibold text-brand-black">
-                    Active Check-In
-                  </Text>
-                </View>
-                {isLoadingStatus ? (
-                  <ActivityIndicator size="small" color="#000000" />
-                ) : onChainStatus && (
-                  <View className="px-2.5 py-1 rounded-full bg-brand-black">
-                    <Text className="text-xs font-semibold text-brand-white">
-                      {onChainStatus}
-                    </Text>
-                  </View>
-                )}
+              <View className="flex-row items-center gap-3 mb-4">
+                <Clock size={24} color="#000000" strokeWidth={2.5} />
+                <Text className="text-lg font-semibold text-brand-black">
+                  Active Check-In
+                </Text>
               </View>
 
               {timeRemaining !== null && timeRemaining > 0 && (

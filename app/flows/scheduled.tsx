@@ -161,7 +161,7 @@ const ScheduledCheckInsScreen = () => {
                     <Button
                       key={day}
                       onPress={() => toggleDay(day)}
-                      variant={isSelected ? 'primary' : 'outline'}
+                      variant={(isSelected ? 'primary' : 'outline') as 'primary' | 'outline'}
                       size="sm"
                       className={isSelected ? '' : 'bg-transparent'}
                     >

@@ -187,7 +187,7 @@ export const useCheckIn = () => {
             const batteryService = await import('@/lib/services/battery')
             const currentBattery = await batteryService.getBatteryInfo()
             
-            const alertMessage = generateAlertMessage(
+            const templateParams = generateAlertMessage(
               'check_in_missed', 
               location, 
               undefined, 
@@ -203,7 +203,7 @@ export const useCheckIn = () => {
 
             const sent = await sendWhatsApp({
               to: alertPhone,
-              message: alertMessage,
+              templateParams,
             }).catch(() => false)
 
             updateEventWhatsAppStatus(activeEvent.id, sent)
