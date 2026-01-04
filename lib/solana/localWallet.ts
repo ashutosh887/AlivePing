@@ -1,5 +1,5 @@
 import { Keypair } from '@solana/web3.js'
-import * as SecureStore from 'expo-secure-store'
+import { secureStoreGetItemAsync, secureStoreSetItemAsync, secureStoreDeleteItemAsync } from '@/lib/utils/secureStore'
 
 const LOCAL_WALLET_KEY = 'aliveping_local_wallet_keypair'
 const LOCAL_WALLET_TYPE = 'local_keypair'
@@ -18,16 +18,16 @@ export const generateLocalWallet = async (): Promise<LocalWalletInfo> => {
   }
 
   const secretKeyBase64 = Buffer.from(keypair.secretKey).toString('base64')
-  await SecureStore.setItemAsync(LOCAL_WALLET_KEY, secretKeyBase64)
-  await SecureStore.setItemAsync('aliveping_wallet_type', LOCAL_WALLET_TYPE)
-  await SecureStore.setItemAsync('aliveping_wallet_public_key', keypair.publicKey.toBase58())
+  await secureStoreSetItemAsync(LOCAL_WALLET_KEY, secretKeyBase64)
+  await secureStoreSetItemAsync('aliveping_wallet_type', LOCAL_WALLET_TYPE)
+  await secureStoreSetItemAsync('aliveping_wallet_public_key', keypair.publicKey.toBase58())
 
   return walletInfo
 }
 
 export const getLocalWallet = async (): Promise<Keypair | null> => {
   try {
-    const secretKeyBase64 = await SecureStore.getItemAsync(LOCAL_WALLET_KEY)
+    const secretKeyBase64 = await secureStoreGetItemAsync(LOCAL_WALLET_KEY)
     if (!secretKeyBase64) {
       return null
     }
@@ -36,14 +36,13 @@ export const getLocalWallet = async (): Promise<Keypair | null> => {
     const keypair = Keypair.fromSecretKey(secretKey)
     return keypair
   } catch (error) {
-    console.error('Error getting local wallet:', error)
     return null
   }
 }
 
 export const hasLocalWallet = async (): Promise<boolean> => {
   try {
-    const walletType = await SecureStore.getItemAsync('aliveping_wallet_type')
+    const walletType = await secureStoreGetItemAsync('aliveping_wallet_type')
     return walletType === LOCAL_WALLET_TYPE
   } catch {
     return false
@@ -52,9 +51,8 @@ export const hasLocalWallet = async (): Promise<boolean> => {
 
 export const clearLocalWallet = async (): Promise<void> => {
   try {
-    await SecureStore.deleteItemAsync(LOCAL_WALLET_KEY)
+    await secureStoreDeleteItemAsync(LOCAL_WALLET_KEY)
   } catch (error) {
-    console.error('Error clearing local wallet:', error)
   }
 }
 

@@ -51,7 +51,6 @@ export const getProgram = async (): Promise<Program | null> => {
     cachedProgram = new Program(IDL as Idl, programId, provider)
     return cachedProgram
   } catch (error: any) {
-    console.error('Error creating program:', error)
     return null
   }
 }
@@ -117,7 +116,6 @@ export const startCheckIn = async (
 ): Promise<string | null> => {
   const program = await getProgram()
   if (!program) {
-    console.error('Program not initialized')
     return null
   }
   
@@ -144,7 +142,6 @@ export const startCheckIn = async (
 
     return tx
   } catch (error) {
-    console.error('Start check-in transaction error:', error)
     return null
   }
 }
@@ -152,7 +149,6 @@ export const startCheckIn = async (
 export const confirmSafe = async (): Promise<string | null> => {
   const program = await getProgram()
   if (!program) {
-    console.error('Program not initialized')
     return null
   }
   
@@ -170,7 +166,6 @@ export const confirmSafe = async (): Promise<string | null> => {
 
     return tx
   } catch (error) {
-    console.error('Confirm safe transaction error:', error)
     return null
   }
 }
@@ -193,7 +188,6 @@ export const expireCheckIn = async (): Promise<string | null> => {
 
     return tx
   } catch (error) {
-    console.error('Expire check-in transaction error:', error)
     return null
   }
 }
@@ -247,7 +241,6 @@ export const updateLastPing = async (): Promise<string | null> => {
 
     return tx
   } catch (error) {
-    console.error('Update last ping transaction error:', error)
     return null
   }
 }
@@ -280,7 +273,6 @@ export const triggerPanic = async (
 
     return tx
   } catch (error) {
-    console.error('Trigger panic transaction error:', error)
     return null
   }
 }
@@ -303,7 +295,6 @@ export const closeSession = async (): Promise<string | null> => {
 
     return tx
   } catch (error) {
-    console.error('Close session transaction error:', error)
     return null
   }
 }
@@ -326,7 +317,6 @@ export const cancelCheckIn = async (): Promise<string | null> => {
 
     return tx
   } catch (error) {
-    console.error('Cancel check-in transaction error:', error)
     return null
   }
 }

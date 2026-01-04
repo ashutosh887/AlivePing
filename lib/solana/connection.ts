@@ -37,7 +37,6 @@ export const getConnection = (network: 'testnet' | 'devnet' | 'mainnet' = 'testn
 export const switchToBackupRPC = (network: 'testnet' | 'devnet' | 'mainnet' = 'testnet') => {
   const endpoints = BACKUP_RPC_ENDPOINTS[network] || [RPC_ENDPOINTS[network]]
   currentRpcIndex = (currentRpcIndex + 1) % endpoints.length
-  console.log(`Switched to backup RPC: ${endpoints[currentRpcIndex]}`)
 }
 
 export const getProgramId = (): PublicKey => {

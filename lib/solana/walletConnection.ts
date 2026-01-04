@@ -1,7 +1,10 @@
 import configs from '@/config'
 import { transact } from '@solana-mobile/mobile-wallet-adapter-protocol-web3js'
 import { PublicKey, Transaction, VersionedTransaction } from '@solana/web3.js'
+import { Platform } from 'react-native'
 import { getAuthToken, setWallet } from './wallet'
+
+const isWeb = Platform.OS === 'web'
 
 export interface AuthorizationResult {
   publicKey: PublicKey
@@ -10,6 +13,10 @@ export interface AuthorizationResult {
 }
 
 export const connectWallet = async (): Promise<AuthorizationResult> => {
+  if (isWeb) {
+    throw new Error('Mobile wallet adapter is not available on web. Please use local wallet instead.')
+  }
+  
   try {
     return await new Promise<AuthorizationResult>((resolve, reject) => {
       const timeout = setTimeout(() => {
@@ -71,6 +78,10 @@ export const connectWallet = async (): Promise<AuthorizationResult> => {
 export const signTransaction = async (
   transaction: Transaction | VersionedTransaction
 ): Promise<Transaction | VersionedTransaction> => {
+  if (isWeb) {
+    throw new Error('Mobile wallet adapter is not available on web.')
+  }
+  
   const authToken = await getAuthToken()
   
   if (!authToken) {
@@ -107,6 +118,10 @@ export const signTransaction = async (
 export const signAllTransactions = async (
   transactions: (Transaction | VersionedTransaction)[]
 ): Promise<(Transaction | VersionedTransaction)[]> => {
+  if (isWeb) {
+    throw new Error('Mobile wallet adapter is not available on web.')
+  }
+  
   const authToken = await getAuthToken()
   
   if (!authToken) {
@@ -133,6 +148,10 @@ export const signAllTransactions = async (
 }
 
 export const disconnectWallet = async (): Promise<void> => {
+  if (isWeb) {
+    return
+  }
+  
   const authToken = await getAuthToken()
   
   if (!authToken) {
