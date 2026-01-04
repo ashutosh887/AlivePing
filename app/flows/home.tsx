@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/Card'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { useCheckIn } from '@/lib/hooks/useCheckIn'
 import { BatteryInfo, getBatteryInfo, subscribeToBatteryUpdates } from '@/lib/services/battery'
+import { getNextScheduledTime } from '@/lib/services/scheduledCheckIns'
 import { getSession } from '@/lib/solana/program'
 import { useAppStore } from '@/lib/store'
 import { formatDate, formatTime } from '@/lib/utils'
@@ -13,6 +14,8 @@ import { AlertTriangle, Battery, Clock, Shield, Zap } from 'lucide-react-native'
 import React, { useEffect, useState } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+const IST_TIMEZONE = 'Asia/Kolkata'
 
 const HomeScreen = () => {
   const router = useRouter()
@@ -53,6 +56,53 @@ const HomeScreen = () => {
     
     return unsubscribe
   }, [])
+
+  useEffect(() => {
+    if (checkIn?.isActive || isProcessing) {
+      return
+    }
+
+    let lastTriggeredMinute = -1
+
+    const checkScheduledCheckIns = () => {
+      const now = new Date()
+      const nowIST = new Date(now.toLocaleString('en-US', { timeZone: IST_TIMEZONE }))
+      const currentDay = nowIST.getDay()
+      const currentHour = nowIST.getHours()
+      const currentMinute = nowIST.getMinutes()
+      const currentSecond = nowIST.getSeconds()
+
+      if (currentSecond > 5) {
+        return
+      }
+
+      const activeScheduled = scheduledCheckIns.filter(s => s.isActive)
+      
+      for (const scheduled of activeScheduled) {
+        if (!scheduled.days.includes(currentDay)) {
+          continue
+        }
+
+        const [scheduledHour, scheduledMinute] = scheduled.time.split(':').map(Number)
+        
+        if (scheduledHour === currentHour && scheduledMinute === currentMinute) {
+          const minuteKey = `${scheduled.id}-${currentHour}-${currentMinute}`
+          
+          if (lastTriggeredMinute !== scheduledMinute) {
+            hapticNotification(Haptics.NotificationFeedbackType.Success)
+            startCheckIn()
+            lastTriggeredMinute = currentMinute
+            break
+          }
+        }
+      }
+    }
+
+    const interval = setInterval(checkScheduledCheckIns, 1000)
+    checkScheduledCheckIns()
+
+    return () => clearInterval(interval)
+  }, [scheduledCheckIns, checkIn?.isActive, isProcessing, startCheckIn])
 
   const checkOnChainStatus = async () => {
     setIsLoadingStatus(true)
@@ -360,30 +410,28 @@ const HomeScreen = () => {
                   <>
                     <View className="w-12 h-12 rounded-full bg-brand-accent items-center justify-center mb-2">
                       <Battery 
-                        size={24} 
+                        size={20} 
+                        strokeWidth={2.5}
                         color={batteryInfo.batteryLevel > 50 ? "#10B981" : batteryInfo.batteryLevel > 20 ? "#F59E0B" : "#EF4444"} 
-                        fill={batteryInfo.isCharging ? "#10B981" : undefined}
+                        fill={batteryInfo.isCharging ? (batteryInfo.batteryLevel > 50 ? "#10B981" : batteryInfo.batteryLevel > 20 ? "#F59E0B" : "#EF4444") : "none"}
                       />
                     </View>
-                    <Text className="text-sm font-semibold text-brand-black">
+                    <Text className="text-sm font-semibold text-brand-black" numberOfLines={1}>
                       Battery
                     </Text>
                     <Text className="text-xs text-brand-muted mt-0.5" numberOfLines={1}>
                       {batteryInfo.isCharging ? 'Charging' : `${batteryInfo.batteryLevel}%`}
                     </Text>
-                    <Text className="text-[10px] text-brand-muted mt-0.5" numberOfLines={1}>
-                      {batteryInfo.manufacturer}
-                    </Text>
                   </>
                 ) : (
                   <>
                     <View className="w-12 h-12 rounded-full bg-brand-accent items-center justify-center mb-2">
-                      <Battery size={24} color="#9CA3AF" />
+                      <Battery size={20} color="#9CA3AF" strokeWidth={2.5} />
                     </View>
-                    <Text className="text-sm font-semibold text-brand-black">
+                    <Text className="text-sm font-semibold text-brand-black" numberOfLines={1}>
                       Battery
                     </Text>
-                    <Text className="text-xs text-brand-muted mt-0.5">
+                    <Text className="text-xs text-brand-muted mt-0.5" numberOfLines={1}>
                       N/A
                     </Text>
                   </>

@@ -1,20 +1,19 @@
 import { ScheduledCheckIn } from '@/lib/store'
 import { scheduleNotificationAsync, cancelScheduledNotificationAsync } from '@/lib/utils/notificationsWeb'
 
-export const scheduleCheckInNotification = async (
-  scheduledCheckIn: ScheduledCheckIn,
-  timezone: string = Intl.DateTimeFormat().resolvedOptions().timeZone
-): Promise<string | null> => {
+const IST_TIMEZONE = 'Asia/Kolkata'
+
+export const getNextScheduledTime = (scheduledCheckIn: ScheduledCheckIn): Date | null => {
   try {
     const [hours, minutes] = scheduledCheckIn.time.split(':').map(Number)
     
     const now = new Date()
-    const today = new Date(now.toLocaleString('en-US', { timeZone: timezone }))
+    const nowIST = new Date(now.toLocaleString('en-US', { timeZone: IST_TIMEZONE }))
     
-    let targetDate = new Date(today)
+    let targetDate = new Date(nowIST)
     targetDate.setHours(hours, minutes, 0, 0)
     
-    if (targetDate <= now) {
+    if (targetDate <= nowIST) {
       targetDate.setDate(targetDate.getDate() + 1)
     }
     
@@ -36,6 +35,22 @@ export const scheduleCheckInNotification = async (
     }
     
     targetDate.setDate(targetDate.getDate() + daysToAdd)
+    
+    return targetDate
+  } catch (error) {
+    return null
+  }
+}
+
+export const scheduleCheckInNotification = async (
+  scheduledCheckIn: ScheduledCheckIn,
+  timezone: string = IST_TIMEZONE
+): Promise<string | null> => {
+  try {
+    const targetDate = getNextScheduledTime(scheduledCheckIn)
+    if (!targetDate) {
+      return null
+    }
     
     const notificationId = await scheduleNotificationAsync({
       content: {
@@ -63,5 +78,39 @@ export const cancelScheduledCheckInNotification = async (notificationId: string)
 }
 
 export const getTimezone = (): string => {
-  return Intl.DateTimeFormat().resolvedOptions().timeZone
+  return IST_TIMEZONE
+}
+
+export const formatTimeIST = (date: Date): string => {
+  return date.toLocaleTimeString('en-IN', {
+    timeZone: IST_TIMEZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  })
+}
+
+export const formatDateIST = (date: Date): string => {
+  const today = new Date()
+  const todayIST = new Date(today.toLocaleString('en-US', { timeZone: IST_TIMEZONE }))
+  const dateIST = new Date(date.toLocaleString('en-US', { timeZone: IST_TIMEZONE }))
+  
+  const diffTime = dateIST.getTime() - todayIST.getTime()
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+  
+  if (diffDays === 0) {
+    return 'Today'
+  } else if (diffDays === 1) {
+    return 'Tomorrow'
+  } else if (diffDays === -1) {
+    return 'Yesterday'
+  } else if (diffDays < 7 && diffDays > -7) {
+    return dateIST.toLocaleDateString('en-IN', { weekday: 'short' })
+  } else {
+    return dateIST.toLocaleDateString('en-IN', { 
+      day: 'numeric', 
+      month: 'short',
+      year: dateIST.getFullYear() !== todayIST.getFullYear() ? 'numeric' : undefined,
+    })
+  }
 }

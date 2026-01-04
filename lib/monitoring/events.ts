@@ -1,3 +1,4 @@
+import { getLocalWalletPublicKey } from '@/lib/solana/localWallet'
 import { encode } from 'base-64'
 
 type SafetyEvent = {
@@ -25,12 +26,36 @@ const publishToConfluent = async (topic: string, event: SafetyEvent) => {
   const auth = getConfluentAuth()
 
   if (!clusterId || !auth || !restEndpoint) {
-    console.log('Confluent not configured, skipping event:', event.type)
     return
   }
 
   try {
     const url = `https://${restEndpoint}/kafka/v3/clusters/${clusterId}/topics/${topic}/records`
+    
+    const eventValue = {
+      type: event.type,
+      userId: event.userId,
+      timestamp: event.timestamp,
+      data: event.data || {},
+    }
+    
+    const requestBody = {
+      partition_id: 0,
+      headers: [
+        {
+          name: 'Content-Type',
+          value: 'application/json',
+        },
+      ],
+      key: {
+        type: 'STRING',
+        data: event.userId,
+      },
+      value: {
+        type: 'STRING',
+        data: JSON.stringify(eventValue),
+      },
+    }
     
     const response = await fetch(url, {
       method: 'POST',
@@ -39,50 +64,44 @@ const publishToConfluent = async (topic: string, event: SafetyEvent) => {
         'Accept': 'application/json',
         'Authorization': auth,
       },
-      body: JSON.stringify({
-        records: [
-          {
-            value: {
-              type: event.type,
-              userId: event.userId,
-              timestamp: event.timestamp,
-              data: event.data || {},
-            },
-            key: event.userId,
-          },
-        ],
-      }),
+      body: JSON.stringify(requestBody),
     })
 
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error('Confluent publish error:', response.status, errorText)
-    } else {
-      console.log('Event published to Confluent:', event.type)
     }
-  } catch (error) {
-    console.error('Confluent publish error:', error)
+  } catch (error: any) {
   }
 }
 
 export const publishSafetyEvent = async (
   eventType: 'check_in_started' | 'check_in_confirmed' | 'check_in_expired' | 'alert_triggered',
-  userId: string,
+  userId: string | null | undefined,
   metadata?: Record<string, any>
 ) => {
+  let finalUserId = userId
+  
+  if (!finalUserId) {
+    const localWalletKey = await getLocalWalletPublicKey()
+    if (localWalletKey) {
+      finalUserId = localWalletKey
+    }
+  }
+  
+  if (!finalUserId) {
+    return
+  }
+
   const event: SafetyEvent = {
     type: eventType,
-    userId,
+    userId: finalUserId,
     timestamp: Date.now(),
     data: metadata,
   }
 
-  const topic = process.env.EXPO_PUBLIC_CONFLUENT_TOPIC || 'safety-events'
+  const topic = process.env.EXPO_PUBLIC_CONFLUENT_TOPIC || 'AlivePing'
 
   if (process.env.EXPO_PUBLIC_CONFLUENT_CLUSTER_ID) {
     await publishToConfluent(topic, event)
-  } else {
-    console.log('Confluent not configured, logging event:', event)
   }
 }
 

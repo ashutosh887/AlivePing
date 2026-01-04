@@ -1,5 +1,4 @@
 import { Button } from '@/components/ui/Button'
-import { checkConnectionHealth } from '@/lib/solana/connectionHealth'
 import { clearLocalWallet, generateLocalWallet, getLocalWalletPublicKey, hasLocalWallet } from '@/lib/solana/localWallet'
 import { clearWallet, getWalletInfo, hasWallet, setWallet as setWalletStorage, validateWallet } from '@/lib/solana/wallet'
 import { connectWallet, disconnectWallet } from '@/lib/solana/walletConnection'
@@ -9,6 +8,8 @@ import { AlertCircle, ArrowLeft, CheckCircle2, Key, RefreshCw, Wallet } from 'lu
 import React, { useCallback, useEffect, useState } from 'react'
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+const isWeb = Platform.OS === 'web'
 
 const AuthScreen = () => {
   const router = useRouter()
@@ -22,19 +23,7 @@ const AuthScreen = () => {
 
   useEffect(() => {
     checkWallet()
-    performHealthCheck()
   }, [])
-
-  const performHealthCheck = async () => {
-    try {
-      const health = await checkConnectionHealth()
-      if (!health.isHealthy && health.errors.length > 0) {
-        console.warn('Connection health check failed:', health.errors)
-      }
-    } catch (error) {
-      console.error('Health check error:', error)
-    }
-  }
 
   const checkWallet = useCallback(async () => {
     try {
@@ -44,7 +33,6 @@ const AuthScreen = () => {
       try {
         localExists = await hasLocalWallet()
       } catch (e) {
-        console.error('hasLocalWallet error:', e)
       }
       
       if (exists || localExists) {
@@ -82,7 +70,6 @@ const AuthScreen = () => {
         clearWalletStore()
       }
     } catch (error: any) {
-      console.error('Check wallet error:', error)
       setError(`Failed to check wallet: ${error.message || 'Unknown error'}`)
       setWalletAddress(null)
       setIsConnected(false)
@@ -110,7 +97,6 @@ const AuthScreen = () => {
       await new Promise(resolve => setTimeout(resolve, 500))
       router.replace('/flows' as any)
     } catch (error: any) {
-      console.error('Error creating local wallet:', error)
       setError(`Failed to create wallet: ${error.message || 'Unknown error'}`)
       Alert.alert(
         'Error',
@@ -125,6 +111,11 @@ const AuthScreen = () => {
   const handleConnect = async () => {
     if (isConnected && walletAddress) {
       router.replace('/flows' as any)
+      return
+    }
+
+    if (isWeb) {
+      setError('Mobile wallet adapter is not available on web. Please use "Use Local Address" instead.')
       return
     }
 
@@ -145,7 +136,6 @@ const AuthScreen = () => {
       await new Promise(resolve => setTimeout(resolve, 800))
       router.replace('/flows' as any)
     } catch (error: any) {
-      console.error('Error connecting wallet:', error)
       const errorMessage = error?.message || 'Unknown error'
       setError(errorMessage)
       
@@ -183,7 +173,6 @@ const AuthScreen = () => {
               setIsConnected(false)
               setError(null)
             } catch (error: any) {
-              console.error('Disconnect error:', error)
               Alert.alert('Error', `Failed to disconnect: ${error.message || 'Unknown error'}`)
             } finally {
               setIsLoading(false)
@@ -266,27 +255,29 @@ const AuthScreen = () => {
             {!isConnected && (
               <View className="w-full gap-3">
                 <Button
-                  onPress={handleConnect}
-                  disabled={isConnecting || isCreatingLocal}
-                  loading={isConnecting}
-                  fullWidth
-                  size="md"
-                  variant="primary"
-                >
-                  {!isConnecting && <Wallet size={20} color="#FFFFFF" />}
-                  {isConnecting ? 'Connecting...' : 'Connect Wallet'}
-                </Button>
-                <Button
                   onPress={handleCreateLocalWallet}
                   disabled={isConnecting || isCreatingLocal}
                   loading={isCreatingLocal}
                   fullWidth
                   size="md"
-                  variant="outline"
+                  variant="primary"
                 >
-                  {!isCreatingLocal && <Key size={20} color="#000000" />}
+                  {!isCreatingLocal && <Key size={20} color="#FFFFFF" />}
                   {isCreatingLocal ? 'Creating...' : 'Use Local Address'}
                 </Button>
+                {!isWeb && (
+                <Button
+                    onPress={handleConnect}
+                    disabled={isConnecting || isCreatingLocal}
+                    loading={isConnecting}
+                  fullWidth
+                  size="md"
+                  variant="outline"
+                >
+                    {!isConnecting && <Wallet size={20} color="#000000" />}
+                    {isConnecting ? 'Connecting...' : 'Connect Mobile Wallet'}
+                </Button>
+                )}
               </View>
             )}
 

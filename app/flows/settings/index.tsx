@@ -7,7 +7,7 @@ import { clearWallet } from '@/lib/solana/wallet'
 import { useAppStore } from '@/lib/store'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useRouter } from 'expo-router'
-import { Bell, Clock, Info, Lock, LogOut, Phone, Shield, Users } from 'lucide-react-native'
+import { Bell, Clock, Info, Lock, LogOut, MessageCircle, Phone, Shield, Users } from 'lucide-react-native'
 import React, { useState } from 'react'
 import { Alert, ScrollView, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -15,7 +15,13 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 const SettingsScreen = () => {
   const router = useRouter()
   const trustedContacts = useAppStore((s) => s.trustedContacts)
-  const notificationPreferences = useAppStore((s) => s.notificationPreferences)
+  const notificationPreferences = useAppStore((s) => s.notificationPreferences) || {
+    whatsappEnabled: true,
+    pushEnabled: true,
+    emailEnabled: false,
+    soundEnabled: true,
+    vibrationEnabled: true,
+  }
   const privacySettings = useAppStore((s) => s.privacySettings)
   const appSettings = useAppStore((s) => s.appSettings)
   const updateNotificationPreferences = useAppStore((s) => s.updateNotificationPreferences)
@@ -184,11 +190,11 @@ const SettingsScreen = () => {
           <SettingsSection title="Notifications">
             <View className="rounded-2xl bg-white overflow-hidden">
               <SettingsItem
-                icon={Bell}
-                title="SMS Alerts"
-                subtitle="Send alerts via text message"
-                value={notificationPreferences.smsEnabled}
-                onToggle={(value) => updateNotificationPreferences({ smsEnabled: value })}
+                icon={MessageCircle}
+                title="WhatsApp Alerts"
+                subtitle="Get updates on WhatsApp"
+                value={notificationPreferences.whatsappEnabled}
+                onToggle={(value) => updateNotificationPreferences({ whatsappEnabled: value })}
               />
               <View className="h-px bg-brand-light mx-5" />
               <SettingsItem
@@ -289,7 +295,6 @@ const SettingsScreen = () => {
                             await AsyncStorage.removeItem('aliveping-store')
                             router.replace('/auth')
                           } catch (error) {
-                            console.error('Logout error:', error)
                             Alert.alert('Error', 'Failed to logout. Please try again.')
                           }
                         },

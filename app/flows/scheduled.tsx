@@ -2,15 +2,17 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { useAppStore, ScheduledCheckIn } from '@/lib/store'
-import { scheduleCheckInNotification, cancelScheduledCheckInNotification, getTimezone } from '@/lib/services/scheduledCheckIns'
+import { scheduleCheckInNotification, cancelScheduledCheckInNotification, getTimezone, getNextScheduledTime, formatTimeIST, formatDateIST } from '@/lib/services/scheduledCheckIns'
 import * as Haptics from 'expo-haptics'
-import { Calendar, Clock, Plus, Trash2, ToggleLeft, ToggleRight } from 'lucide-react-native'
+import { Calendar, Clock, Plus, Trash2 } from 'lucide-react-native'
 import React, { useEffect, useState } from 'react'
 import { Alert, ScrollView, Switch, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const DAY_NUMBERS = [0, 1, 2, 3, 4, 5, 6]
+
+const IST_TIMEZONE = 'Asia/Kolkata'
 
 const ScheduledCheckInsScreen = () => {
   const scheduledCheckIns = useAppStore((s) => s.scheduledCheckIns)
@@ -20,8 +22,18 @@ const ScheduledCheckInsScreen = () => {
   const updateScheduledCheckIn = useAppStore((s) => s.updateScheduledCheckIn)
   const [showAddForm, setShowAddForm] = useState(false)
   const [name, setName] = useState('')
-  const [time, setTime] = useState('')
-  const [selectedDays, setSelectedDays] = useState<number[]>([])
+  const [time, setTime] = useState(() => {
+    const now = new Date()
+    const nowIST = new Date(now.toLocaleString('en-US', { timeZone: IST_TIMEZONE }))
+    const hours = nowIST.getHours().toString().padStart(2, '0')
+    const minutes = nowIST.getMinutes().toString().padStart(2, '0')
+    return `${hours}:${minutes}`
+  })
+  const [selectedDays, setSelectedDays] = useState<number[]>(() => {
+    const now = new Date()
+    const nowIST = new Date(now.toLocaleString('en-US', { timeZone: IST_TIMEZONE }))
+    return [nowIST.getDay()]
+  })
   const [duration, setDuration] = useState(appSettings.checkInDurationMinutes.toString())
 
   const toggleDay = (day: number) => {
@@ -205,53 +217,67 @@ const ScheduledCheckInsScreen = () => {
             </Card>
           ) : (
             <View className="gap-4">
-              {scheduledCheckIns.map((checkIn) => (
-                <Card key={checkIn.id}>
-                  <View className="flex-row items-center justify-between mb-3">
-                    <View className="flex-1">
-                      <Text className="text-lg font-semibold text-brand-black">
-                        {checkIn.name}
-                      </Text>
-                      <View className="flex-row items-center gap-2 mt-1">
-                        <Clock size={14} color="#6B7280" />
-                        <Text className="text-sm text-brand-muted">
-                          {checkIn.time} • {checkIn.duration} min
+              {scheduledCheckIns.map((checkIn) => {
+                const nextTime = getNextScheduledTime(checkIn)
+                const nextTimeFormatted = nextTime ? formatTimeIST(nextTime) : checkIn.time
+                const nextDateFormatted = nextTime ? formatDateIST(nextTime) : ''
+                
+                return (
+                  <Card key={checkIn.id}>
+                    <View className="flex-row items-center justify-between mb-3">
+                      <View className="flex-1">
+                        <Text className="text-lg font-semibold text-brand-black">
+                          {checkIn.name}
                         </Text>
+                        <View className="flex-row items-center gap-2 mt-1">
+                          <Clock size={14} color="#6B7280" />
+                          <Text className="text-sm text-brand-muted">
+                            {checkIn.time} IST • {checkIn.duration} min
+                          </Text>
+                        </View>
+                        {nextTime && checkIn.isActive && (
+                          <View className="flex-row items-center gap-1.5 mt-1.5">
+                            <Calendar size={12} color="#10B981" />
+                            <Text className="text-xs font-medium text-green-600">
+                              Next: {nextDateFormatted} at {nextTimeFormatted}
+                            </Text>
+                          </View>
+                        )}
                       </View>
+                      <Switch
+                        value={checkIn.isActive}
+                        onValueChange={() => handleToggleActive(checkIn)}
+                        trackColor={{ false: '#D1D5DB', true: '#000000' }}
+                        thumbColor="#FFFFFF"
+                      />
                     </View>
-                    <Switch
-                      value={checkIn.isActive}
-                      onValueChange={() => handleToggleActive(checkIn)}
-                      trackColor={{ false: '#D1D5DB', true: '#000000' }}
-                      thumbColor="#FFFFFF"
-                    />
-                  </View>
 
-                  <View className="flex-row flex-wrap gap-2 mb-3">
-                    {checkIn.days.map(day => (
-                      <View
-                        key={day}
-                        className="px-2.5 py-1 rounded-full bg-brand-accent"
+                    <View className="flex-row flex-wrap gap-2 mb-3">
+                      {checkIn.days.map(day => (
+                        <View
+                          key={day}
+                          className="px-2.5 py-1 rounded-full bg-brand-accent"
+                        >
+                          <Text className="text-xs font-medium text-brand-black">
+                            {DAYS[day]}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+
+                    <View className="flex-row justify-end">
+                      <Button
+                        onPress={() => handleRemove(checkIn.id, checkIn.name)}
+                        variant="outline"
+                        size="sm"
+                        className="bg-red-50 border-red-200"
                       >
-                        <Text className="text-xs font-medium text-brand-black">
-                          {DAYS[day]}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-
-                  <View className="flex-row justify-end">
-                    <Button
-                      onPress={() => handleRemove(checkIn.id, checkIn.name)}
-                      variant="outline"
-                      size="sm"
-                      className="bg-red-50 border-red-200"
-                    >
-                      <Trash2 size={16} color="#EF4444" />
-                    </Button>
-                  </View>
-                </Card>
-              ))}
+                        <Trash2 size={16} color="#EF4444" />
+                      </Button>
+                    </View>
+                  </Card>
+                )
+              })}
             </View>
           )}
         </ScrollView>

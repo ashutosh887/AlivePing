@@ -5,7 +5,6 @@ import { publishSafetyEvent } from '@/lib/monitoring/events'
 import { updateLastKnownState } from '@/lib/services/phoneOffFallback'
 import { generateAlertMessage, sendWhatsApp, getAlertPhoneNumber } from '@/lib/services/whatsapp'
 import { confirmSafe as solanaConfirmSafe, startCheckIn as solanaStartCheckIn } from '@/lib/solana/program'
-import { getWalletPublicKey } from '@/lib/solana/wallet'
 import { useAppStore } from '@/lib/store'
 import { useEffect, useState } from 'react'
 
@@ -19,6 +18,7 @@ export const useCheckIn = () => {
   const trustedContacts = useAppStore((s) => s.trustedContacts)
   const notificationPreferences = useAppStore((s) => s.notificationPreferences)
   const appSettings = useAppStore((s) => s.appSettings)
+  const wallet = useAppStore((s) => s.wallet)
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
 
@@ -53,17 +53,15 @@ export const useCheckIn = () => {
         eventType: 'check_in',
       })
 
-      const userId = await getWalletPublicKey()
-      if (userId) {
-        await logEvent({
-          event: DATADOG_EVENTS.CHECK_IN_START,
-          payload: {
-            userId,
-            locationAvailable: !!location,
-          },
-        })
-        await publishSafetyEvent('check_in_started', userId, { location: location ? 'available' : 'unavailable' })
-      }
+      const userId = wallet.publicKey
+      await logEvent({
+        event: DATADOG_EVENTS.CHECK_IN_START,
+        payload: {
+          userId: userId || 'unknown',
+          locationAvailable: !!location,
+        },
+      })
+      await publishSafetyEvent('check_in_started', userId, { location: location ? 'available' : 'unavailable' })
     } catch (error) {
     } finally {
       setIsProcessing(false)
@@ -89,16 +87,14 @@ export const useCheckIn = () => {
         eventType: 'check_in',
       })
 
-      const userId = await getWalletPublicKey()
-      if (userId) {
-        await logEvent({
-          event: DATADOG_EVENTS.CHECK_IN_CONFIRMED,
-          payload: {
-            userId,
-          },
-        })
-        await publishSafetyEvent('check_in_confirmed', userId)
-      }
+      const userId = wallet.publicKey
+      await logEvent({
+        event: DATADOG_EVENTS.CHECK_IN_CONFIRMED,
+        payload: {
+          userId: userId || 'unknown',
+        },
+      })
+      await publishSafetyEvent('check_in_confirmed', userId)
     } catch (error) {
     } finally {
       setIsProcessing(false)
@@ -169,17 +165,15 @@ export const useCheckIn = () => {
   useEffect(() => {
     if (isAlertActive) {
       const sendAlertNotifications = async () => {
-        const userId = await getWalletPublicKey()
+        const userId = useAppStore.getState().wallet.publicKey
         
-        if (userId) {
-          await logEvent({
-            event: DATADOG_EVENTS.ALERT_TRIGGERED,
-            payload: {
-              userId,
-            },
-          })
-          await publishSafetyEvent('alert_triggered', userId)
-        }
+        await logEvent({
+          event: DATADOG_EVENTS.ALERT_TRIGGERED,
+          payload: {
+            userId: userId || 'unknown',
+          },
+        })
+        await publishSafetyEvent('alert_triggered', userId)
 
         const whatsappEnabled = notificationPreferences?.whatsappEnabled ?? true
         
