@@ -1,23 +1,13 @@
+import "@/lib/polyfills"
+import "react-native-get-random-values"
+
 import "@/global.css"
 import { DATADOG_EVENTS } from "@/lib/constants/datadog"
 import { logEvent } from "@/lib/monitoring/datadog"
 import { DefaultTheme, ThemeProvider } from "@react-navigation/native"
-import { Buffer } from "buffer"
 import { Stack } from "expo-router"
 import { StatusBar } from "expo-status-bar"
 import { useEffect } from "react"
-import { Platform } from "react-native"
-import "react-native-get-random-values"
-
-global.Buffer = Buffer
-
-if (Platform.OS === 'web' && typeof global.crypto === 'undefined') {
-  try {
-    const crypto = require('crypto-browserify')
-    global.crypto = crypto
-  } catch (e) {
-  }
-}
 
 export default function RootLayout() {
   useEffect(() => {
