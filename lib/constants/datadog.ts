@@ -37,5 +37,9 @@ export const DATADOG_EVENTS = {
   APP_STARTED: "app.started",
   APP_ERROR: "app.error",
   APP_EXCEPTION: "app.exception",
+
+  WHATSAPP_SENT: "whatsapp.sent",
+  WHATSAPP_FAILED: "whatsapp.failed",
+  WHATSAPP_TOKEN_EXPIRED: "whatsapp.token_expired",
 }
 

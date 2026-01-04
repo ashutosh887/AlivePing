@@ -31,7 +31,9 @@ export async function logEvent({
       }),
     })
   } catch (error) {
-    console.error('Datadog log error:', error)
   }
 }
 
+export const initializeDatadogLogger = () => {
+  // No-op for HTTP API approach
+}

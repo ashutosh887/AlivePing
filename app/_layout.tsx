@@ -13,17 +13,17 @@ export default function RootLayout() {
   useEffect(() => {
     logEvent({
       event: DATADOG_EVENTS.APP_STARTED,
-    });
-  }, []);
+    })
+  }, [])
 
-      return (
-        <ThemeProvider value={DefaultTheme}>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="auth" />
-            <Stack.Screen name="flows" />
-          </Stack>
-          <StatusBar style="dark" />
-        </ThemeProvider>
-      );
-    }
+  return (
+    <ThemeProvider value={DefaultTheme}>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="auth" />
+        <Stack.Screen name="flows" />
+      </Stack>
+      <StatusBar style="dark" />
+    </ThemeProvider>
+  )
+}

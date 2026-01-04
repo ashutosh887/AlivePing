@@ -1,5 +1,5 @@
 import { ScheduledCheckIn } from '@/lib/store'
-import * as Notifications from 'expo-notifications'
+import { scheduleNotificationAsync, cancelScheduledNotificationAsync } from '@/lib/utils/notificationsWeb'
 
 export const scheduleCheckInNotification = async (
   scheduledCheckIn: ScheduledCheckIn,
@@ -37,12 +37,11 @@ export const scheduleCheckInNotification = async (
     
     targetDate.setDate(targetDate.getDate() + daysToAdd)
     
-    const notificationId = await Notifications.scheduleNotificationAsync({
+    const notificationId = await scheduleNotificationAsync({
       content: {
         title: 'Check-In Reminder',
         body: `Time for your scheduled check-in: ${scheduledCheckIn.name}`,
         sound: true,
-        priority: Notifications.AndroidNotificationPriority.HIGH,
       },
       trigger: {
         date: targetDate,
@@ -52,16 +51,14 @@ export const scheduleCheckInNotification = async (
     
     return notificationId
   } catch (error) {
-    console.error('Error scheduling check-in notification:', error)
     return null
   }
 }
 
 export const cancelScheduledCheckInNotification = async (notificationId: string) => {
   try {
-    await Notifications.cancelScheduledNotificationAsync(notificationId)
+    await cancelScheduledNotificationAsync(notificationId)
   } catch (error) {
-    console.error('Error canceling scheduled check-in notification:', error)
   }
 }
 
