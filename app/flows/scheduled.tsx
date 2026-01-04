@@ -155,17 +155,20 @@ const ScheduledCheckInsScreen = () => {
 
               <Text className="text-sm font-semibold text-brand-black mb-3">Days of Week</Text>
               <View className="flex-row flex-wrap gap-2 mb-5">
-                {DAY_NUMBERS.map(day => (
-                  <Button
-                    key={day}
-                    onPress={() => toggleDay(day)}
-                    variant={selectedDays.includes(day) ? 'default' : 'outline'}
-                    size="sm"
-                    className={selectedDays.includes(day) ? '' : 'bg-transparent'}
-                  >
-                    {DAYS[day]}
-                  </Button>
-                ))}
+                {DAY_NUMBERS.map(day => {
+                  const isSelected = selectedDays.includes(day)
+                  return (
+                    <Button
+                      key={day}
+                      onPress={() => toggleDay(day)}
+                      variant={isSelected ? 'primary' : 'outline'}
+                      size="sm"
+                      className={isSelected ? '' : 'bg-transparent'}
+                    >
+                      {DAYS[day]}
+                    </Button>
+                  )
+                })}
               </View>
 
               <View className="flex-row gap-3">

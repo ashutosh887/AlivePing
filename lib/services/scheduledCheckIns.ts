@@ -1,5 +1,5 @@
 import { ScheduledCheckIn } from '@/lib/store'
-import { scheduleNotificationAsync, cancelScheduledNotificationAsync } from '@/lib/utils/notificationsWeb'
+import { cancelScheduledNotificationAsync, scheduleNotificationAsync } from '@/lib/utils/notificationsWeb'
 
 const IST_TIMEZONE = 'Asia/Kolkata'
 
@@ -61,7 +61,7 @@ export const scheduleCheckInNotification = async (
       trigger: {
         date: targetDate,
         timezone,
-      },
+      } as any,
     })
     
     return notificationId
