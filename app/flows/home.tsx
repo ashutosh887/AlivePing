@@ -3,12 +3,13 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { useCheckIn } from '@/lib/hooks/useCheckIn'
+import { BatteryInfo, getBatteryInfo, subscribeToBatteryUpdates } from '@/lib/services/battery'
 import { getSession } from '@/lib/solana/program'
 import { useAppStore } from '@/lib/store'
 import { formatDate, formatTime } from '@/lib/utils'
-import * as Haptics from 'expo-haptics'
+import { hapticImpact, hapticNotification, Haptics } from '@/lib/utils/haptics'
 import { useRouter } from 'expo-router'
-import { AlertTriangle, Clock, Shield, Zap } from 'lucide-react-native'
+import { AlertTriangle, Battery, Clock, Shield, Zap } from 'lucide-react-native'
 import React, { useEffect, useState } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -30,12 +31,28 @@ const HomeScreen = () => {
   const triggerPanicStore = useAppStore((s) => s.triggerPanic)
   const [onChainStatus, setOnChainStatus] = useState<string | null>(null)
   const [isLoadingStatus, setIsLoadingStatus] = useState(false)
+  const [batteryInfo, setBatteryInfo] = useState<BatteryInfo | null>(null)
 
   useEffect(() => {
     if (checkIn?.isActive) {
       checkOnChainStatus()
     }
   }, [checkIn?.isActive])
+
+  useEffect(() => {
+    const loadBatteryInfo = async () => {
+      const info = await getBatteryInfo()
+      setBatteryInfo(info)
+    }
+    
+    loadBatteryInfo()
+    
+    const unsubscribe = subscribeToBatteryUpdates((info) => {
+      setBatteryInfo(info)
+    })
+    
+    return unsubscribe
+  }, [])
 
   const checkOnChainStatus = async () => {
     setIsLoadingStatus(true)
@@ -48,7 +65,7 @@ const HomeScreen = () => {
         setOnChainStatus('Not on-chain')
       }
     } catch (error) {
-      setOnChainStatus('Error')
+      setOnChainStatus(null)
     } finally {
       setIsLoadingStatus(false)
     }
@@ -59,20 +76,21 @@ const HomeScreen = () => {
   }
 
   const handleStartCheckIn = async () => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+    await hapticImpact()
     startCheckIn()
   }
 
   const handleConfirmCheckIn = async () => {
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+    await hapticNotification()
     confirmCheckIn()
   }
 
   const handlePanic = async () => {
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+    await hapticNotification(Haptics.NotificationFeedbackType.Error)
     const locationService = await import('@/lib/location/locationService')
     const solanaProgram = await import('@/lib/solana/program')
     const phoneOffFallback = await import('@/lib/services/phoneOffFallback')
+    const whatsappService = await import('@/lib/services/whatsapp')
     const location = await locationService.getCurrentLocation()
     const locationData = location ? {
       latitude: location.latitude,
@@ -80,7 +98,7 @@ const HomeScreen = () => {
       accuracy: location.accuracy,
     } : undefined
     
-    triggerPanicStore(locationData)
+    const panicEvent = triggerPanicStore(locationData)
     
     phoneOffFallback.updateLastKnownState({
       timestamp: Date.now(),
@@ -89,11 +107,40 @@ const HomeScreen = () => {
       eventType: 'panic',
     })
     
+    const notificationPreferences = useAppStore.getState().notificationPreferences
+    const updateEventWhatsAppStatus = useAppStore.getState().updateEventWhatsAppStatus
+    
+    const whatsappEnabled = notificationPreferences?.whatsappEnabled ?? true
+    
+    if (whatsappEnabled && panicEvent) {
+      const batteryService = await import('@/lib/services/battery')
+      const currentBattery = await batteryService.getBatteryInfo()
+      
+      const alertMessage = whatsappService.generateAlertMessage(
+        'panic', 
+        locationData,
+        undefined,
+        currentBattery ? {
+          batteryLevel: currentBattery.batteryLevel,
+          isCharging: currentBattery.isCharging,
+          deviceModel: currentBattery.deviceModel,
+          manufacturer: currentBattery.manufacturer,
+        } : null
+      )
+      const alertPhone = whatsappService.getAlertPhoneNumber()
+      
+      const sent = await whatsappService.sendWhatsApp({
+        to: alertPhone,
+        message: alertMessage,
+      }).catch(() => false)
+      
+      updateEventWhatsAppStatus(panicEvent.id, sent)
+    }
+    
     try {
       const locationHash = location ? await locationService.hashLocation(location) : new Array(32).fill(0)
       await solanaProgram.triggerPanic(locationHash)
     } catch (error) {
-      console.error('Solana panic error:', error)
     }
   }
 
@@ -304,6 +351,43 @@ const HomeScreen = () => {
                 <Text className="text-xs text-brand-muted mt-0.5">
                   {events.length} event{events.length !== 1 ? 's' : ''}
                 </Text>
+              </View>
+            </Card>
+
+            <Card className="flex-1">
+              <View className="items-center">
+                {batteryInfo ? (
+                  <>
+                    <View className="w-12 h-12 rounded-full bg-brand-accent items-center justify-center mb-2">
+                      <Battery 
+                        size={24} 
+                        color={batteryInfo.batteryLevel > 50 ? "#10B981" : batteryInfo.batteryLevel > 20 ? "#F59E0B" : "#EF4444"} 
+                        fill={batteryInfo.isCharging ? "#10B981" : undefined}
+                      />
+                    </View>
+                    <Text className="text-sm font-semibold text-brand-black">
+                      Battery
+                    </Text>
+                    <Text className="text-xs text-brand-muted mt-0.5" numberOfLines={1}>
+                      {batteryInfo.isCharging ? 'Charging' : `${batteryInfo.batteryLevel}%`}
+                    </Text>
+                    <Text className="text-[10px] text-brand-muted mt-0.5" numberOfLines={1}>
+                      {batteryInfo.manufacturer}
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <View className="w-12 h-12 rounded-full bg-brand-accent items-center justify-center mb-2">
+                      <Battery size={24} color="#9CA3AF" />
+                    </View>
+                    <Text className="text-sm font-semibold text-brand-black">
+                      Battery
+                    </Text>
+                    <Text className="text-xs text-brand-muted mt-0.5">
+                      N/A
+                    </Text>
+                  </>
+                )}
               </View>
             </Card>
           </View>

@@ -1,6 +1,6 @@
-import { sendSMS, generateAlertMessage } from './sms'
-import { TrustedContact } from '@/lib/store'
+import { sendWhatsApp, generateAlertMessage, getAlertPhoneNumber } from './whatsapp'
 import { getLastKnownLocation } from '@/lib/location/locationService'
+import { getBatteryInfo } from './battery'
 
 export interface LastKnownState {
   timestamp: number
@@ -23,18 +23,12 @@ export const getLastKnownState = (): LastKnownState | null => {
   return lastKnownState
 }
 
-export const escalateViaSMS = async (
-  trustedContacts: TrustedContact[],
-  userPhoneNumber: string | null,
+export const escalateViaWhatsApp = async (
   userName?: string
 ): Promise<boolean> => {
-  if (trustedContacts.length === 0 && !userPhoneNumber) {
-    console.warn('No trusted contacts available for SMS escalation')
-    return false
-  }
-
   const lastState = getLastKnownState()
   const lastLocation = lastState?.location || await getLastKnownLocation()
+  const batteryInfo = await getBatteryInfo()
 
   const eventType = lastState?.eventType === 'panic' 
     ? 'panic' 
@@ -48,33 +42,22 @@ export const escalateViaSMS = async (
       latitude: lastLocation.latitude,
       longitude: lastLocation.longitude,
     } : undefined,
-    userName
+    userName,
+    batteryInfo ? {
+      batteryLevel: batteryInfo.batteryLevel,
+      isCharging: batteryInfo.isCharging,
+      deviceModel: batteryInfo.deviceModel,
+      manufacturer: batteryInfo.manufacturer,
+    } : null
   )
 
   const escalationMessage = `${alertMessage}\n\n⚠️ PHONE OFF: This alert was sent because the device could not be reached. Last known state: ${new Date(lastState?.timestamp || Date.now()).toLocaleString()}`
 
-  const contactsToNotify = [...trustedContacts]
-  if (userPhoneNumber) {
-    contactsToNotify.push({
-      id: 'self',
-      name: 'Self',
-      phone: userPhoneNumber,
-      isPrimary: false,
-    })
-  }
-
-  const smsPromises = contactsToNotify.map(contact =>
-    sendSMS({
-      to: contact.phone,
+  const alertPhone = getAlertPhoneNumber()
+  const result = await sendWhatsApp({
+    to: alertPhone,
       message: escalationMessage,
-    }).catch(error => {
-      console.error(`Failed to send escalation SMS to ${contact.name}:`, error)
-      return false
-    })
-  )
+  }).catch(() => false)
 
-  const results = await Promise.allSettled(smsPromises)
-  const successCount = results.filter(r => r.status === 'fulfilled' && r.value === true).length
-
-  return successCount > 0
+  return result
 }
