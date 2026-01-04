@@ -36,7 +36,7 @@ export const escalateViaWhatsApp = async (
       ? 'check_in_missed' 
       : 'alert'
 
-  const templateParams = generateAlertMessage(
+  const alertParams = generateAlertMessage(
     eventType,
     lastLocation ? {
       latitude: lastLocation.latitude,
@@ -54,7 +54,7 @@ export const escalateViaWhatsApp = async (
   const alertPhone = getAlertPhoneNumber()
   const result = await sendWhatsApp({
     to: alertPhone,
-    templateParams,
+    alertParams,
   }).catch(() => false)
 
   return result

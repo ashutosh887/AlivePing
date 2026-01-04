@@ -87,14 +87,17 @@ EXPO_PUBLIC_GEMINI_API_KEY=your_gemini_key
 
 # Meta WhatsApp Business API (Required for WhatsApp alerts)
 EXPO_PUBLIC_WHATSAPP_ACCESS_TOKEN=your_whatsapp_access_token
-EXPO_PUBLIC_WHATSAPP_PHONE_NUMBER_ID=your_phone_number_id
+EXPO_PUBLIC_WHATSAPP_PHONE_NUMBER_ID=your_whatsapp_business_account_id
+EXPO_PUBLIC_WHATSAPP_ALERT_PHONE_IOS=your_ios_recipient_phone_number
+EXPO_PUBLIC_WHATSAPP_ALERT_PHONE_ANDROID=your_android_recipient_phone_number
 ```
 
 **Note:** WhatsApp alerts are sent using Meta's WhatsApp Business API. You'll need to:
 1. Create a Meta Business account
 2. Set up a WhatsApp Business account
 3. Get an access token from Meta's Graph API
-4. Configure the phone number ID and alert recipient numbers
+4. Get your WhatsApp Business Phone Number ID (the sender account ID)
+5. Configure recipient phone numbers for alerts (one for iOS, one for Android)
 
 ### Run
 

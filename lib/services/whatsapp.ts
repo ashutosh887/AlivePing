@@ -40,7 +40,7 @@ const getWhatsAppConfig = () => {
   }
 }
 
-export interface WhatsAppTemplateParams {
+export interface WhatsAppAlertParams {
   eventType: 'panic' | 'check_in_missed' | 'alert'
   userName?: string
   timestamp: string
@@ -49,11 +49,7 @@ export interface WhatsAppTemplateParams {
   batteryInfo?: string
 }
 
-const getTemplateName = (): string => {
-  return process.env.EXPO_PUBLIC_WHATSAPP_TEMPLATE_NAME || 'aliveping_safety_alert_v1'
-}
-
-export const sendWhatsApp = async (options: SendWhatsAppOptions | { to: string; templateParams: WhatsAppTemplateParams }): Promise<boolean> => {
+export const sendWhatsApp = async (options: SendWhatsAppOptions | { to: string; alertParams: WhatsAppAlertParams }): Promise<boolean> => {
   const config = getWhatsAppConfig()
   if (!config) {
     return false
@@ -67,71 +63,46 @@ export const sendWhatsApp = async (options: SendWhatsAppOptions | { to: string; 
     }
     
     const url = `https://graph.facebook.com/v22.0/${config.phoneNumberId}/messages`
-    const templateName = getTemplateName()
     
-    let requestBody: any
+    let messageText: string
     
-    if ('templateParams' in options) {
-      const params = options.templateParams
-      const bodyParams: any[] = []
-      
+    if ('alertParams' in options) {
+      const params = options.alertParams
       const alertTypeText = params.eventType === 'panic' 
-        ? 'PANIC ALERT' 
+        ? '🚨 PANIC ALERT' 
         : params.eventType === 'check_in_missed' 
-          ? 'MISSED CHECK-IN' 
-          : 'SAFETY ALERT'
+          ? '⏰ MISSED CHECK-IN' 
+          : '⚠️ SAFETY ALERT'
       
-      bodyParams.push({ type: 'text', text: alertTypeText })
-      bodyParams.push({ type: 'text', text: params.userName || 'User' })
-      bodyParams.push({ type: 'text', text: params.timestamp })
+      let message = `${alertTypeText}\n\n`
+      message += `User: ${params.userName || 'User'}\n`
+      message += `Time: ${params.timestamp}\n\n`
       
       if (params.location) {
-        bodyParams.push({ type: 'text', text: params.location })
+        message += `Location: ${params.location}\n`
       } else {
-        bodyParams.push({ type: 'text', text: 'Unknown' })
+        message += `Location: Unknown\n`
       }
       
       if (params.locationLink) {
-        bodyParams.push({ type: 'text', text: params.locationLink })
-      } else {
-        bodyParams.push({ type: 'text', text: 'N/A' })
+        message += `Map: ${params.locationLink}\n`
       }
       
       if (params.batteryInfo) {
-        bodyParams.push({ type: 'text', text: params.batteryInfo })
-      } else {
-        bodyParams.push({ type: 'text', text: 'N/A' })
+        message += `Battery: ${params.batteryInfo}\n`
       }
       
-      requestBody = {
-        messaging_product: 'whatsapp',
-        to: phoneNumber,
-        type: 'template',
-        template: {
-          name: templateName,
-          language: { code: 'en_US' },
-          components: [{
-            type: 'body',
-            parameters: bodyParams
-          }]
-        },
-      }
+      messageText = message
     } else {
-      requestBody = {
-        messaging_product: 'whatsapp',
-        to: phoneNumber,
-        type: 'template',
-        template: {
-          name: templateName,
-          language: { code: 'en_US' },
-          components: [{
-            type: 'body',
-            parameters: [{
-              type: 'text',
-              text: options.message.substring(0, 1024)
-            }]
-          }]
-        },
+      messageText = options.message
+    }
+    
+    const requestBody = {
+      messaging_product: 'whatsapp',
+      to: phoneNumber,
+      type: 'text',
+      text: {
+        body: messageText.substring(0, 4096)
       }
     }
     
@@ -214,7 +185,7 @@ export const generateAlertMessage = (
   location?: { latitude: number; longitude: number },
   userName?: string,
   batteryInfo?: WhatsAppBatteryInfo | null
-): WhatsAppTemplateParams => {
+): WhatsAppAlertParams => {
   const name = userName || 'User'
   const timestamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
   

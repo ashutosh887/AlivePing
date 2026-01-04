@@ -141,7 +141,7 @@ const HomeScreen = () => {
       const batteryService = await import('@/lib/services/battery')
       const currentBattery = await batteryService.getBatteryInfo()
       
-      const templateParams = whatsappService.generateAlertMessage(
+      const alertParams = whatsappService.generateAlertMessage(
         'panic', 
         locationData,
         undefined,
@@ -156,7 +156,7 @@ const HomeScreen = () => {
       
       const sent = await whatsappService.sendWhatsApp({
         to: alertPhone,
-        templateParams,
+        alertParams,
       }).catch(() => false)
       
       updateEventWhatsAppStatus(panicEvent.id, sent)

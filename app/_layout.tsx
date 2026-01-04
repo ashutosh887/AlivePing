@@ -1,5 +1,8 @@
-import "@/lib/polyfills"
+import { Buffer } from "buffer"
 import "react-native-get-random-values"
+import { Platform } from "react-native"
+
+global.Buffer = Buffer
 
 import "@/global.css"
 import { DATADOG_EVENTS } from "@/lib/constants/datadog"

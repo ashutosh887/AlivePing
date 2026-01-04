@@ -6,7 +6,20 @@ const config = getDefaultConfig(__dirname)
 config.resolver.extraNodeModules = {
   ...config.resolver.extraNodeModules,
   buffer: require.resolve('buffer'),
-  crypto: require.resolve('crypto-browserify'),
+}
+
+const originalResolveRequest = config.resolver.resolveRequest
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (moduleName === 'crypto' && platform === 'web') {
+    return {
+      filePath: require.resolve('crypto-browserify'),
+      type: 'sourceFile',
+    }
+  }
+  if (originalResolveRequest) {
+    return originalResolveRequest(context, moduleName, platform)
+  }
+  return context.resolveRequest(context, moduleName, platform)
 }
 
 config.resolver.sourceExts = [...(config.resolver.sourceExts || []), 'mjs']
