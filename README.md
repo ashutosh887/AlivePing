@@ -4,6 +4,9 @@
 
 Your last-mile personal safety system.
 
+<img width="462" height="602" alt="image" src="https://github.com/user-attachments/assets/0283bbec-d797-43da-ae27-905bf79b6c53" />
+
+
 ## Overview
 
 AlivePing automatically alerts trusted contacts if you fail to check in, providing immutable proof on the Solana blockchain.
